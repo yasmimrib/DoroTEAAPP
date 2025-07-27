@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "653228448901",
+    "project_id": "doroteaapp-6c5cb",
+    "storage_bucket": "doroteaapp-6c5cb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:653228448901:android:e1cb2f1b2d532e312e1dec",
+        "android_client_info": {
+          "package_name": "com.example.dorotea_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAPl0OyUeUIceyCElYl9YD2Wnt-ZkO3dSg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
