@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart'; // Importe para inicializar o Firebase
 import 'firebase_options.dart'; // Importe as opções geradas pelo FlutterFire CLI
 import 'initial_screen.dart'; // Importe a tela inicial
+import 'music_selection_screen.dart'; // Importe a tela de seleção de música
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Garante que os bindings do Flutter estejam inicializados

@@ -1,7 +1,8 @@
 // lib/home_screen.dart
 import 'package:flutter/material.dart';
-import 'package:dorotea_app/profile_screen.dart'; // Importe a tela de perfil
-import 'package:dorotea_app/about_screen.dart'; // Importe a tela "Sobre"
+import 'package:dorotea_app/profile_screen.dart';
+import 'package:dorotea_app/about_screen.dart';
+import 'package:dorotea_app/music_selection_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,61 +12,62 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0; // Para controlar o item selecionado na BottomNavigationBar
+  int _selectedIndex = 0;
 
-  // Lista de dados para os cartões de funcionalidade
-  final List<Map<String, dynamic>> _featureCards = [
-    {
-      'icon': Icons.camera_alt, // Ícone da câmera
-      'title': 'Visualizar Agora',
-      'description': 'Acompanhe em tempo real como está seu pequeno',
-      'onTap': () {
-        // Lógica para "Visualizar Agora"
-        debugPrint('Visualizar Agora clicado!');
+  late final List<Map<String, dynamic>> _featureCards;
+
+  @override
+  void initState() {
+    super.initState();
+    _featureCards = [
+      {
+        'icon': Icons.camera_alt,
+        'title': 'Visualizar Agora',
+        'description': 'Acompanhe em tempo real como está seu pequeno',
+        'onTap': () {
+          debugPrint('Visualizar Agora clicado!');
+        },
       },
-    },
-    {
-      'icon': Icons.music_note, // Ícone de música
-      'title': 'Escolher Música',
-      'description': 'Escolha a música que o ursinho Dorotea vai tocar',
-      'onTap': () {
-        // Lógica para "Escolher Música"
-        debugPrint('Escolher Música clicado!');
+      {
+        'icon': Icons.music_note,
+        'title': 'Escolher Música',
+        'description': 'Escolha a música que o ursinho Dorotea vai tocar',
+        'onTap': () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const MusicSelectionScreen()),
+          );
+        },
       },
-    },
-    {
-      'icon': Icons.assignment, // Ícone de planilha/relatório
-      'title': 'Relatórios de Humor',
-      'description': 'Entenda como tem sido os últimos dias',
-      'onTap': () {
-        // Lógica para "Relatórios de Humor"
-        debugPrint('Relatórios de Humor clicado!');
+      {
+        'icon': Icons.assignment,
+        'title': 'Relatórios de Humor',
+        'description': 'Entenda como tem sido os últimos dias',
+        'onTap': () {
+          debugPrint('Relatórios de Humor clicado!');
+        },
       },
-    },
-  ];
+    ];
+  }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
-    // Lógica para navegação da BottomNavigationBar
+
     switch (index) {
       case 0:
         debugPrint('Home clicado!');
-        // Se você tiver uma Home mais complexa com sub-telas, gerenciará a navegação aqui.
-        // Por enquanto, fica na HomeScreen.
         break;
       case 1:
         debugPrint('Ursinho clicado (Abrir tela Sobre)!');
-        // Navegação para a Tela "Sobre"
-        Navigator.push( // Usamos push para poder voltar para a HomeScreen
+        Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const AboutScreen()),
         );
         break;
       case 2:
         debugPrint('Perfil clicado!');
-        // Navegação para a Tela de Perfil
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const ProfileScreen()),
@@ -76,26 +78,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Cores do tema, puxadas de main.dart
     final Color primaryPurple = Theme.of(context).primaryColor;
     final Color lightPurpleText = Theme.of(context).colorScheme.secondary;
 
     return Scaffold(
-      backgroundColor: primaryPurple, // Fundo roxo consistente
+      backgroundColor: primaryPurple,
       appBar: AppBar(
-        title: const Text('DoroTEA'), // Título da AppBar conforme a imagem
+        title: const Text('DoroTEA'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           children: _featureCards.map((cardData) {
             return Padding(
-              padding: const EdgeInsets.only(bottom: 20.0), // Espaçamento entre os cartões
+              padding: const EdgeInsets.only(bottom: 20.0),
               child: _buildFeatureCard(
                 icon: cardData['icon'],
                 title: cardData['title'],
                 description: cardData['description'],
-                onTap: cardData['onTap'],
+                onTap: cardData['onTap'] as VoidCallback,
                 primaryPurple: primaryPurple,
                 lightPurpleText: lightPurpleText,
               ),
@@ -104,22 +105,22 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: primaryPurple, // Fundo da barra de navegação
-        selectedItemColor: Colors.white, // Cor do ícone selecionado
-        unselectedItemColor: Colors.white.withOpacity(0.7), // Cor dos ícones não selecionados
+        backgroundColor: primaryPurple,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white.withOpacity(0.7),
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
-            label: 'Home', // O label não aparece na imagem, mas é boa prática ter
+            label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.pets), // Ícone de urso/pata
+            icon: Icon(Icons.pets),
             label: 'Ursinho',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person), // Ícone de perfil
+            icon: Icon(Icons.person),
             label: 'Perfil',
           ),
         ],
@@ -127,7 +128,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Widget auxiliar para construir cada cartão de funcionalidade
   Widget _buildFeatureCard({
     required IconData icon,
     required String title,
@@ -139,23 +139,22 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
-        color: Colors.white, // Fundo branco do cartão
-        borderRadius: BorderRadius.circular(20.0), // Borda arredondada
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.0),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Ícone estático (câmera, música, planilha)
           Container(
             padding: const EdgeInsets.all(12.0),
             decoration: BoxDecoration(
-              color: primaryPurple.withOpacity(0.2), // Fundo suave para o ícone
+              color: primaryPurple.withOpacity(0.2),
               borderRadius: BorderRadius.circular(15.0),
             ),
             child: Icon(
               icon,
               size: 40.0,
-              color: primaryPurple, // Cor do ícone
+              color: primaryPurple,
             ),
           ),
           const SizedBox(width: 20.0),
@@ -166,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   title,
                   style: TextStyle(
-                    color: lightPurpleText, // Cor do título do cartão
+                    color: lightPurpleText,
                     fontSize: 18.0,
                     fontWeight: FontWeight.bold,
                   ),
@@ -175,17 +174,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   description,
                   style: TextStyle(
-                    color: Colors.grey[600], // Cor da descrição
+                    color: Colors.grey[600],
                     fontSize: 14.0,
                   ),
                 ),
               ],
             ),
           ),
-          // Seta clicável
           IconButton(
-            icon: Icon(Icons.arrow_forward, color: lightPurpleText), // Cor da seta
-            onPressed: onTap, // Ação ao clicar na seta
+            icon: Icon(Icons.arrow_forward, color: lightPurpleText),
+            onPressed: onTap,
           ),
         ],
       ),
