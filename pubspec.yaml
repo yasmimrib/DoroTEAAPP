@@ -33,6 +33,7 @@ dependencies:
   firebase_core: ^3.15.2 # Sempre necessário para qualquer serviço Firebase
   firebase_auth: ^5.7.0 # Para autenticação
   cloud_firestore: ^5.6.12 # Para banco de dados Firestore
+  flutter_blue_plus: ^1.29.0
 
   just_audio: ^0.9.36
 
@@ -65,6 +66,7 @@ flutter:
   # Para adicionar assets ao seu aplicativo, adicione uma seção assets, como esta:
   assets:
      - assets/ 
+     - assets/audios/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

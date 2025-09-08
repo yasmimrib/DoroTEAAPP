@@ -15,11 +15,12 @@ class MusicSelectionScreen extends StatefulWidget {
 }
 
 class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
+  // ATUALIZADO: Usando caminhos para arquivos locais
   final List<Map<String, dynamic>> _defaultMusicList = [
-    {'id': 'calm_music', 'title': 'Música Calma', 'artist': 'X (min)', 'isSelected': false, 'isDeletable': false, 'audioUrl': ''},
-    {'id': 'relaxing_melody', 'title': 'Melodia Relaxante', 'artist': 'X (min)', 'isSelected': false, 'isDeletable': false, 'audioUrl': ''},
-    {'id': 'nature_sounds', 'title': 'Sons da Natureza', 'artist': 'X (min)', 'isSelected': false, 'isDeletable': false, 'audioUrl': ''},
-    {'id': 'lullaby', 'title': 'Canção de Ninar', 'artist': 'X (min)', 'isSelected': false, 'isDeletable': false, 'audioUrl': ''},
+    {'id': 'bmp', 'title': '60 BPM', 'time': '2:40 (min)', 'isSelected': false, 'isDeletable': false, 'audioUrl': 'assets/audios/bmp.mp3'},
+    {'id': 'brilha_estrelinha', 'title': 'Brilha Estrelinha', 'time': '1:17 (min)', 'isSelected': false, 'isDeletable': false, 'audioUrl': 'assets/audios/brilha_brilha_estrelinha.mp3'},
+    {'id': 'clair_de_lune', 'title': 'Clair de Lune', 'time': '5:24 (min)', 'isSelected': false, 'isDeletable': false, 'audioUrl': 'assets/audios/claire_de_lune.mp3'},
+    {'id': 'gymnopedle', 'title': 'Gymnopédie No.1', 'time': '3:29 (min)', 'isSelected': false, 'isDeletable': false, 'audioUrl': 'assets/audios/gymnopedle.mp3'},
   ];
 
   List<Map<String, dynamic>> _allMusicList = [];
@@ -72,7 +73,7 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
           _allMusicList.add({
             'id': doc.id,
             'title': doc['title'] as String,
-            'artist': doc['artist'] as String,
+            'time': doc['time'] as String,
             'audioUrl': doc['audioUrl'] as String,
             'isSelected': doc['isSelected'] as bool,
             'isDeletable': true,
@@ -92,19 +93,19 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
     try {
       if (audioUrl.isNotEmpty) {
         await _audioPlayer.stop();
-        await _audioPlayer.setUrl(audioUrl);
+
+        // ATUALIZADO: Verificação para tocar URL ou arquivo local
+        if (audioUrl.startsWith('http')) {
+          await _audioPlayer.setUrl(audioUrl);
+        } else {
+          await _audioPlayer.setAsset(audioUrl);
+        }
+
         await _audioPlayer.play();
         setState(() {
           _currentPlayingMusicId = id;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Tocando: ${_audioPlayer.icyMetadata?.info?.title ?? 'Música'}')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Esta música não possui um URL de áudio definido.')),
-        );
-      }
+      } 
     } catch (e) {
       debugPrint('Erro ao tocar a música: $e');
     }
@@ -203,10 +204,10 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
         ),
         title: const Text(
           'DoroTEA',
-          style: TextStyle(color: Colors.white), // Alterado para branco
+          style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: primaryPurple, // Alterado para roxo
-        foregroundColor: Colors.white, // Alterado para branco
+        backgroundColor: primaryPurple,
+        foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -221,14 +222,14 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
                   crossAxisCount: 2,
                   crossAxisSpacing: 16.0,
                   mainAxisSpacing: 16.0,
-                  childAspectRatio: 0.85,
+                  childAspectRatio: 0.70,
                 ),
                 itemCount: _allMusicList.length,
                 itemBuilder: (context, index) {
                   return _buildMusicGridBlock(
                     _allMusicList[index]['id'] as String,
                     _allMusicList[index]['title'] as String,
-                    _allMusicList[index]['artist'] as String,
+                    _allMusicList[index]['time'] as String,
                     _allMusicList[index]['isSelected'] as bool,
                     _allMusicList[index]['isDeletable'] as bool,
                     _allMusicList[index]['audioUrl'] as String,
@@ -252,14 +253,14 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.pets), label: 'Ursinho'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
         ],
-        selectedItemColor: Colors.white, // Alterado para branco
-        unselectedItemColor: Colors.white.withOpacity(0.7), // Alterado para branco
-        backgroundColor: primaryPurple, // Alterado para roxo
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white.withOpacity(0.7),
+        backgroundColor: primaryPurple,
       ),
     );
   }
 
-  Widget _buildMusicGridBlock(String id, String title, String artist, bool isSelected, bool isDeletable, String audioUrl, int index, Color primaryPurple, Color lightPurpleText) {
+  Widget _buildMusicGridBlock(String id, String title, String time, bool isSelected, bool isDeletable, String audioUrl, int index, Color primaryPurple, Color lightPurpleText) {
     bool isCurrentSongPlaying = _currentPlayingMusicId == id && _audioPlayer.playing;
 
     return Card(
@@ -282,7 +283,7 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
                       textAlign: TextAlign.center,
                     ),
                     Text(
-                      artist,
+                      time,
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       textAlign: TextAlign.center,
                     ),
