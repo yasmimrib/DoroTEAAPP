@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:just_audio/just_audio.dart';
-import 'package:dorotea_app/add_music_screen.dart'; 
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:dorotea_app/add_music_screen.dart';
 import 'package:dorotea_app/home_screen.dart';
 import 'package:dorotea_app/about_screen.dart';
 import 'package:dorotea_app/profile_screen.dart';
@@ -15,99 +15,110 @@ class MusicSelectionScreen extends StatefulWidget {
 }
 
 class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
-  // ATUALIZADO: Usando caminhos para arquivos locais
   final List<Map<String, dynamic>> _defaultMusicList = [
-    {'id': 'bmp', 'title': '60 BPM', 'time': '2:40 (min)', 'isSelected': false, 'isDeletable': false, 'audioUrl': 'assets/audios/bmp.mp3'},
-    {'id': 'brilha_estrelinha', 'title': 'Brilha Estrelinha', 'time': '1:17 (min)', 'isSelected': false, 'isDeletable': false, 'audioUrl': 'assets/audios/brilha_brilha_estrelinha.mp3'},
-    {'id': 'clair_de_lune', 'title': 'Clair de Lune', 'time': '5:24 (min)', 'isSelected': false, 'isDeletable': false, 'audioUrl': 'assets/audios/claire_de_lune.mp3'},
-    {'id': 'gymnopedle', 'title': 'Gymnopédie No.1', 'time': '3:29 (min)', 'isSelected': false, 'isDeletable': false, 'audioUrl': 'assets/audios/gymnopedle.mp3'},
+    {'id': 'calm_music', 'title': 'Música Calma', 'artist': 'X (min)', 'isSelected': false, 'isDeletable': false, 'audioUrl': 'assets/musics/som-ambiente-relaxante.mp3'},
+    {'id': 'relaxing_melody', 'title': 'Melodia Relaxante', 'artist': 'X (min)', 'isSelected': false, 'isDeletable': false, 'audioUrl': 'assets/musics/som-ambiente-piano.mp3'},
+    {'id': 'nature_sounds', 'title': 'Sons da Natureza', 'artist': 'X (min)', 'isSelected': false, 'isDeletable': false, 'audioUrl': 'assets/musics/som-ambiente-natureza.mp3'},
+    {'id': 'lullaby', 'title': 'Canção de Ninar', 'artist': 'X (min)', 'isSelected': false, 'isDeletable': false, 'audioUrl': 'assets/musics/som-ambiente-ninar.mp3'},
   ];
 
-  List<Map<String, dynamic>> _allMusicList = [];
   int _selectedIndex = 1;
-  String? _currentPlayingMusicId;
-
-  final AudioPlayer _audioPlayer = AudioPlayer();
 
   @override
   void initState() {
     super.initState();
-    _loadAllMusic();
-    
-    _audioPlayer.playerStateStream.listen((playerState) {
-      if (playerState.processingState == ProcessingState.ready) {
-        setState(() {
-          // Atualiza a UI quando a música está pronta para tocar
-        });
-      }
-      if (playerState.playing) {
-        // Nada a fazer, o play já atualizou o ID.
-      } else if (playerState.processingState == ProcessingState.completed) {
-        setState(() {
-          _currentPlayingMusicId = null;
-        });
-      }
-    });
   }
 
   @override
   void dispose() {
-    _audioPlayer.dispose();
     super.dispose();
   }
 
-  Future<void> _loadAllMusic() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    
-    _allMusicList = List.from(_defaultMusicList);
-
-    if (user != null) {
-      try {
-        QuerySnapshot userMusicSnapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('musics')
-            .get();
-        
-        for (var doc in userMusicSnapshot.docs) {
-          _allMusicList.add({
-            'id': doc.id,
-            'title': doc['title'] as String,
-            'time': doc['time'] as String,
-            'audioUrl': doc['audioUrl'] as String,
-            'isSelected': doc['isSelected'] as bool,
-            'isDeletable': true,
-          });
-        }
-
-        setState(() {}); 
-        debugPrint('Músicas do Firebase recarregadas: ${_allMusicList.length}');
-        
-      } catch (e) {
-        debugPrint('Erro ao carregar músicas do usuário: $e');
-      }
+  // Lógica de comunicação BLE
+  Future<void> _sendCommandToEspBle(String audioUrl) async {
+    if (!await FlutterBluePlus.isSupported) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bluetooth não suportado neste dispositivo.')),
+      );
+      return;
     }
-  }
 
-  void _playMusic(String id, String audioUrl) async {
+    if (await FlutterBluePlus.adapterState.first != BluetoothAdapterState.on) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, ative o Bluetooth.')),
+      );
+      return;
+    }
+
     try {
-      if (audioUrl.isNotEmpty) {
-        await _audioPlayer.stop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Procurando pelo ESP32...')),
+      );
 
-        // ATUALIZADO: Verificação para tocar URL ou arquivo local
-        if (audioUrl.startsWith('http')) {
-          await _audioPlayer.setUrl(audioUrl);
-        } else {
-          await _audioPlayer.setAsset(audioUrl);
+      await FlutterBluePlus.startScan(timeout: const Duration(seconds: 4));
+
+      BluetoothDevice? espDevice;
+      // Correção: acessa a lista de resultados de forma segura
+      final scanResults = await FlutterBluePlus.scanResults.first;
+      for (final r in scanResults) {
+        if ((r.device.platformName ?? '') == 'ESP32' || (r.device.localName ?? '') == 'ESP32') {
+          espDevice = r.device;
+          break;
         }
+      }
 
-        await _audioPlayer.play();
-        setState(() {
-          _currentPlayingMusicId = id;
-        });
-      } 
+      await FlutterBluePlus.stopScan();
+
+      if (espDevice == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('ESP32 não encontrado.')),
+        );
+        return;
+      }
+
+      await espDevice.connect();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Conectado a ${espDevice.platformName}')),
+      );
+
+      final services = await espDevice.discoverServices();
+      BluetoothCharacteristic? filenameCharacteristic;
+
+      final serviceUuid = Guid("4fafc201-1fb5-459e-8fcc-c5c9c331914b");
+      final characteristicUuid = Guid("beb5483e-36e1-4688-b7f5-ea07361b26a8");
+
+      for (var service in services) {
+        if (service.uuid == serviceUuid) {
+          for (var c in service.characteristics) {
+            if (c.uuid == characteristicUuid) {
+              filenameCharacteristic = c;
+              break;
+            }
+          }
+          break;
+        }
+      }
+
+      if (filenameCharacteristic != null) {
+        final command = 'PLAY:$audioUrl';
+        await filenameCharacteristic.write(command.codeUnits, withoutResponse: true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Comando de reprodução enviado.')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Serviço/Característica não encontrada.')),
+        );
+      }
+
+      await espDevice.disconnect();
     } catch (e) {
-      debugPrint('Erro ao tocar a música: $e');
+      debugPrint("Erro BLE: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro na comunicação BLE: $e')),
+      );
+    } finally {
+      FlutterBluePlus.stopScan();
     }
   }
 
@@ -148,12 +159,9 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
             .collection('musics')
             .doc(docId)
             .delete();
-        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Música excluída com sucesso!')),
         );
-
-        _loadAllMusic();
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Erro ao excluir música.')),
@@ -213,32 +221,9 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16.0,
-                  mainAxisSpacing: 16.0,
-                  childAspectRatio: 0.70,
-                ),
-                itemCount: _allMusicList.length,
-                itemBuilder: (context, index) {
-                  return _buildMusicGridBlock(
-                    _allMusicList[index]['id'] as String,
-                    _allMusicList[index]['title'] as String,
-                    _allMusicList[index]['time'] as String,
-                    _allMusicList[index]['isSelected'] as bool,
-                    _allMusicList[index]['isDeletable'] as bool,
-                    _allMusicList[index]['audioUrl'] as String,
-                    index,
-                    primaryPurple,
-                    lightPurpleText
-                  );
-                },
-              ),
+              _buildMusicList(),
               const SizedBox(height: 20),
               _buildAddMusicBlock(lightPurpleText),
             ],
@@ -260,9 +245,86 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
     );
   }
 
-  Widget _buildMusicGridBlock(String id, String title, String time, bool isSelected, bool isDeletable, String audioUrl, int index, Color primaryPurple, Color lightPurpleText) {
-    bool isCurrentSongPlaying = _currentPlayingMusicId == id && _audioPlayer.playing;
+  Widget _buildMusicList() {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return _buildMusicGridView(_defaultMusicList);
+    }
+    
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('musics')
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return const Center(child: Text('Erro ao carregar músicas.'));
+        }
+        
+        List<Map<String, dynamic>> userMusicList = snapshot.data!.docs.map((doc) {
+          return {
+            'id': doc.id,
+            'title': doc['title'] as String,
+            'artist': doc['artist'] as String,
+            'audioUrl': doc['audioUrl'] as String,
+            'isSelected': doc['isSelected'] as bool,
+            'isDeletable': true,
+          };
+        }).toList();
 
+        List<Map<String, dynamic>> allMusicList = List.from(_defaultMusicList)..addAll(userMusicList);
+
+        return _buildMusicGridView(allMusicList);
+      },
+    );
+  }
+
+  Widget _buildMusicGridView(List<Map<String, dynamic>> musicList) {
+    final Color primaryPurple = Theme.of(context).primaryColor;
+    final Color lightPurpleText = Theme.of(context).colorScheme.secondary;
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16.0,
+        mainAxisSpacing: 16.0,
+        childAspectRatio: 0.85,
+      ),
+      itemCount: musicList.length,
+      itemBuilder: (context, index) {
+        return _buildMusicGridBlock(
+          musicList[index]['id'] as String,
+          musicList[index]['title'] as String,
+          musicList[index]['artist'] as String,
+          musicList[index]['isSelected'] as bool,
+          musicList[index]['isDeletable'] as bool,
+          musicList[index]['audioUrl'] as String?,
+          musicList,
+          index,
+          primaryPurple,
+          lightPurpleText
+        );
+      },
+    );
+  }
+
+  Widget _buildMusicGridBlock(
+    String id, 
+    String title, 
+    String artist, 
+    bool isSelected, 
+    bool isDeletable, 
+    String? audioUrl,
+    List<Map<String, dynamic>> musicList, 
+    int index, 
+    Color primaryPurple, 
+    Color lightPurpleText
+  ) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -279,30 +341,33 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
                     const SizedBox(height: 8),
                     Text(
                       title,
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: lightPurpleText),
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: lightPurpleText),
                       textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      time,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      artist,
+                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                       textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
                 IconButton(
                   icon: Icon(
-                    isCurrentSongPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                    Icons.play_circle_filled,
                     color: lightPurpleText,
                     size: 40,
                   ),
                   onPressed: () {
-                    if (isCurrentSongPlaying) {
-                      _audioPlayer.pause();
-                      setState(() {
-                        _currentPlayingMusicId = null;
-                      });
+                    if (audioUrl != null && audioUrl.isNotEmpty) {
+                      _sendCommandToEspBle(audioUrl);
                     } else {
-                      _playMusic(id, audioUrl);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Esta música não possui um URL de áudio definido.')),
+                      );
                     }
                   },
                 ),
@@ -319,12 +384,33 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
                     ),
                     Checkbox(
                       value: isSelected,
-                      onChanged: (bool? value) {
-                        setState(() {
-                          for (int i = 0; i < _allMusicList.length; i++) {
-                            _allMusicList[i]['isSelected'] = (i == index);
+                      onChanged: (bool? value) async {
+                        User? user = FirebaseAuth.instance.currentUser;
+                        if (user != null) {
+                          try {
+                            // Desseleciona a música anterior
+                            final prevSelected = await FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(user.uid)
+                                .collection('musics')
+                                .where('isSelected', isEqualTo: true)
+                                .get();
+
+                            if (prevSelected.docs.isNotEmpty) {
+                               await prevSelected.docs.first.reference.update({'isSelected': false});
+                            }
+                            
+                            // Seleciona a música atual
+                            await FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(user.uid)
+                                .collection('musics')
+                                .doc(id)
+                                .update({'isSelected': true});
+                          } catch (e) {
+                            debugPrint('Erro ao atualizar seleção no Firebase: $e');
                           }
-                        });
+                        }
                       },
                       activeColor: lightPurpleText,
                     ),
@@ -354,13 +440,20 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       color: Colors.white,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Adicione suas próprias músicas',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: lightPurpleText),
+            Expanded(
+              child: Text(
+                'Adicione suas próprias músicas',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: lightPurpleText
+                ),
+                softWrap: true,
+              ),
             ),
             IconButton(
               icon: Icon(Icons.arrow_forward, color: lightPurpleText),
@@ -368,37 +461,12 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const AddMusicScreen()),
-                ).then((_) {
-                  _loadAllMusic();
-                });
+                );
               },
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildBottomNavigationBar(Color lightPurpleText) {
-    return BottomNavigationBar(
-      items: const <BottomNavigationBarItem>[
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home),
-          label: 'Home',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.pets),
-          label: 'Ursinho',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Perfil',
-        ),
-      ],
-      currentIndex: _selectedIndex,
-      selectedItemColor: lightPurpleText,
-      unselectedItemColor: Colors.grey,
-      onTap: _onItemTapped,
     );
   }
 }
