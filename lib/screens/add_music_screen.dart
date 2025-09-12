@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:dorotea_app/music_selection_screen.dart';
+import 'package:dorotea_app/screens/music_selection_screen.dart';
 
 class AddMusicScreen extends StatefulWidget {
   const AddMusicScreen({super.key});

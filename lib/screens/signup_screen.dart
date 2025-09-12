@@ -1,7 +1,7 @@
 // lib/signup_screen.dart
 import 'package:flutter/material.dart';
 // import 'package:doroteia_login_app/login_screen.dart'; // Você pode querer voltar para a tela de login após o cadastro
-import 'package:dorotea_app/home_screen.dart'; // Importar a tela principal do Doroteia
+import 'package:dorotea_app/screens/home_screen.dart'; // Importar a tela principal do Doroteia
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Importe o Firebase Auth
 import 'package:cloud_firestore/cloud_firestore.dart'; // Importe o Cloud Firestore

@@ -1,6 +1,6 @@
 // lib/initial_screen.dart
 import 'package:flutter/material.dart';
-import 'package:dorotea_app/login_screen.dart'; // Importe a tela de login
+import 'package:dorotea_app/screens/login_screen.dart'; // Importe a tela de login
 
 class InitialScreen extends StatelessWidget {
   const InitialScreen({super.key});

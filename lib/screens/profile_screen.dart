@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Para obter o usuário atual
 import 'package:cloud_firestore/cloud_firestore.dart'; // Para buscar os dados do Firestore
-import 'package:dorotea_app/initial_screen.dart'; // Importe a tela inicial para redirecionar no logout
+import 'package:dorotea_app/screens/initial_screen.dart'; // Importe a tela inicial para redirecionar no logout
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});

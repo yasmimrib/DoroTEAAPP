@@ -1,7 +1,7 @@
 // lib/login_screen.dart
 import 'package:flutter/material.dart';
-import 'package:dorotea_app/signup_screen.dart'; // Importe a tela de cadastro
-import 'package:dorotea_app/home_screen.dart'; // Importe a tela principal (Home)
+import 'package:dorotea_app/screens/signup_screen.dart'; // Importe a tela de cadastro
+import 'package:dorotea_app/screens/home_screen.dart'; // Importe a tela principal (Home)
 import 'package:firebase_auth/firebase_auth.dart'; // Importe o Firebase Auth
 
 

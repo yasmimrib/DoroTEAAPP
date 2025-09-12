@@ -1,8 +1,8 @@
-// lib/home_screen.dart
 import 'package:flutter/material.dart';
-import 'package:dorotea_app/profile_screen.dart';
-import 'package:dorotea_app/about_screen.dart';
-import 'package:dorotea_app/music_selection_screen.dart';
+import 'package:dorotea_app/screens/profile_screen.dart';
+import 'package:dorotea_app/screens/about_screen.dart';
+import 'package:dorotea_app/screens/music_selection_screen.dart';
+import 'package:dorotea_app/screens/report_screen.dart'; // Importe a tela de relatórios
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -44,7 +44,11 @@ class _HomeScreenState extends State<HomeScreen> {
         'title': 'Relatórios de Humor',
         'description': 'Entenda como tem sido os últimos dias',
         'onTap': () {
-          debugPrint('Relatórios de Humor clicado!');
+          // Ação para navegar para a tela de Relatórios de Humor
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ReportScreen()),
+          );
         },
       },
     ];
