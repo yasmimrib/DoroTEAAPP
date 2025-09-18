@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:dorotea_app/screens/profile_screen.dart';
 import 'package:dorotea_app/screens/about_screen.dart';
 import 'package:dorotea_app/screens/music_selection_screen.dart';
-import 'package:dorotea_app/screens/report_screen.dart'; // Importe a tela de relatórios
+import 'package:dorotea_app/screens/report_screen.dart'; // Tela de relatórios
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final String email; // <-- recebe o email do usuário
+  const HomeScreen({super.key, required this.email});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -35,7 +36,10 @@ class _HomeScreenState extends State<HomeScreen> {
         'onTap': () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const MusicSelectionScreen()),
+            MaterialPageRoute(
+              builder: (context) =>
+                  MusicSelectionScreen(email: widget.email), // <-- email passado
+            ),
           );
         },
       },
@@ -44,10 +48,12 @@ class _HomeScreenState extends State<HomeScreen> {
         'title': 'Relatórios de Humor',
         'description': 'Entenda como tem sido os últimos dias',
         'onTap': () {
-          // Ação para navegar para a tela de Relatórios de Humor
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const ReportScreen()),
+            MaterialPageRoute(
+              builder: (context) =>
+                  ReportScreen(userEmail: widget.email), // <-- email passado
+            ),
           );
         },
       },
@@ -74,7 +80,10 @@ class _HomeScreenState extends State<HomeScreen> {
         debugPrint('Perfil clicado!');
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+          MaterialPageRoute(
+            builder: (context) =>
+                ProfileScreen(userEmail: widget.email), // <-- email passado
+          ),
         );
         break;
     }

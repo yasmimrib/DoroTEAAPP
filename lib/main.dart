@@ -8,11 +8,8 @@ import 'screens/music_selection_screen.dart'; // Importe a tela de seleção de 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Garante que os bindings do Flutter estejam inicializados
 
-  // Inicializa o Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
 
+ 
   runApp(const MyApp());
 }
 

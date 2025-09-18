@@ -1,190 +1,239 @@
+// lib/screens/music_selection_screen.dart
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:dorotea_app/screens/add_music_screen.dart'; 
+import 'package:dorotea_app/screens/add_music_screen.dart';
 import 'package:dorotea_app/screens/home_screen.dart';
-import 'package:dorotea_app/screens/about_screen.dart';
 import 'package:dorotea_app/screens/profile_screen.dart';
+import 'package:dorotea_app/screens/initial_screen.dart';
+import 'package:dorotea_app/screens/report_screen.dart';
+
 
 class MusicSelectionScreen extends StatefulWidget {
-  const MusicSelectionScreen({super.key});
+  final String email;
+  const MusicSelectionScreen({super.key, required this.email});
 
   @override
   State<MusicSelectionScreen> createState() => _MusicSelectionScreenState();
 }
 
 class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
-  // ATUALIZADO: Usando caminhos para arquivos locais
+  // Lista de músicas padrão. O campo 'audioUrl' aponta para o asset.
   final List<Map<String, dynamic>> _defaultMusicList = [
-    {'id': 'bmp', 'title': '60 BPM', 'time': '2:40 (min)', 'isSelected': false, 'isDeletable': false, 'audioUrl': 'assets/audios/bmp.mp3'},
-    {'id': 'brilha_estrelinha', 'title': 'Brilha Estrelinha', 'time': '1:17 (min)', 'isSelected': false, 'isDeletable': false, 'audioUrl': 'assets/audios/brilha_brilha_estrelinha.mp3'},
-    {'id': 'clair_de_lune', 'title': 'Clair de Lune', 'time': '5:24 (min)', 'isSelected': false, 'isDeletable': false, 'audioUrl': 'assets/audios/claire_de_lune.mp3'},
-    {'id': 'gymnopedle', 'title': 'Gymnopédie No.1', 'time': '3:29 (min)', 'isSelected': false, 'isDeletable': false, 'audioUrl': 'assets/audios/gymnopedle.mp3'},
+    {
+      'id': 'bmp',
+      'title': '60 BPM',
+      'artist': 'Anônimo',
+      'audioUrl': 'assets/audios/bmp.mp3',
+      'isDeletable': false,
+    },
+    {
+      'id': 'brilha_estrelinha',
+      'title': 'Brilha Estrelinha',
+      'artist': 'Anônimo',
+      'audioUrl': 'assets/audios/brilha_brilha_estrelinha.mp3',
+      'isDeletable': false,
+    },
+    {
+      'id': 'clair_de_lune',
+      'title': 'Clair de Lune',
+      'artist': 'Claude Debussy',
+      'audioUrl': 'assets/audios/clair_de_lune.mp3',
+      'isDeletable': false,
+    },
+    {
+      'id': 'lullaby',
+      'title': 'Lullaby',
+      'artist': 'Johannes Brahms',
+      'audioUrl': 'assets/audios/lullaby.mp3',
+      'isDeletable': false,
+    },
+    {
+      'id': 'primavera',
+      'title': 'Primavera',
+      'artist': 'Vivaldi',
+      'audioUrl': 'assets/audios/primavera.mp3',
+      'isDeletable': false,
+    },
   ];
 
-  List<Map<String, dynamic>> _allMusicList = [];
-  int _selectedIndex = 1;
-  String? _currentPlayingMusicId;
-
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  late List<Map<String, dynamic>> _musicList;
+  final _player = AudioPlayer();
+  int? _playingIndex;
 
   @override
   void initState() {
     super.initState();
+    _musicList = List.from(_defaultMusicList);
     _loadAllMusic();
-    
-    _audioPlayer.playerStateStream.listen((playerState) {
-      if (playerState.processingState == ProcessingState.ready) {
-        setState(() {
-          // Atualiza a UI quando a música está pronta para tocar
-        });
-      }
-      if (playerState.playing) {
-        // Nada a fazer, o play já atualizou o ID.
-      } else if (playerState.processingState == ProcessingState.completed) {
-        setState(() {
-          _currentPlayingMusicId = null;
-        });
-      }
-    });
   }
 
   @override
   void dispose() {
-    _audioPlayer.dispose();
+    _player.dispose();
     super.dispose();
   }
 
-  Future<void> _loadAllMusic() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    
-    _allMusicList = List.from(_defaultMusicList);
+  void _loadAllMusic() async {
+    final String userEmail = widget.email;
 
-    if (user != null) {
-      try {
-        QuerySnapshot userMusicSnapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('musics')
-            .get();
+    if (userEmail.isEmpty) {
+      debugPrint('Usuário não logado.');
+      return;
+    }
+
+    const String apiUrl = 'http://127.0.0.1:5000';
+    final url = Uri.parse('$apiUrl/musics/$userEmail');
+
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        final List<dynamic> fetchedMusics = data['musics'];
+
+        final List<Map<String, dynamic>> userMusics =
+            List<Map<String, dynamic>>.from(fetchedMusics.map((music) {
+          return {
+            'id': music['id'].toString(),
+            'title': music['title'] ?? 'Sem Título',
+            'artist': music['artist'] ?? 'Sem Artista',
+            'audioUrl': music['audioUrl'] ?? '',
+            'isDeletable': music['isDeletable'] ?? true,
+          };
+        }));
         
-        for (var doc in userMusicSnapshot.docs) {
-          _allMusicList.add({
-            'id': doc.id,
-            'title': doc['title'] as String,
-            'time': doc['time'] as String,
-            'audioUrl': doc['audioUrl'] as String,
-            'isSelected': doc['isSelected'] as bool,
-            'isDeletable': true,
+        setState(() {
+          _musicList = List.from(_defaultMusicList);
+          _musicList.addAll(userMusics);
+        });
+
+        debugPrint('Músicas do usuário carregadas com sucesso.');
+      } else {
+        debugPrint('Erro ao carregar músicas: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Erro de conexão ao carregar músicas: $e');
+    }
+  }
+
+  Future<void> _deleteMusic(String musicId) async {
+    const String apiUrl = 'http://127.0.0.1:5000';
+    final url = Uri.parse('$apiUrl/delete_music/$musicId');
+
+    try {
+      final response = await http.delete(url);
+
+      if (response.statusCode == 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Música deletada com sucesso!')),
+          );
+        }
+        _loadAllMusic();
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Erro ao deletar música.')),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Erro ao deletar música: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Erro de conexão ao deletar música.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _playMusic(String audioUrl, int index) async {
+    try {
+      if (audioUrl.startsWith('assets/')) {
+        await _player.setAsset(audioUrl);
+      } else {
+        await _player.setUrl(audioUrl);
+      }
+      
+      await _player.play();
+      setState(() {
+        _playingIndex = index;
+      });
+      _player.playerStateStream.listen((playerState) {
+        if (playerState.processingState == ProcessingState.completed) {
+          setState(() {
+            _playingIndex = null;
           });
         }
-
-        setState(() {}); 
-        debugPrint('Músicas do Firebase recarregadas: ${_allMusicList.length}');
-        
-      } catch (e) {
-        debugPrint('Erro ao carregar músicas do usuário: $e');
-      }
-    }
-  }
-
-  void _playMusic(String id, String audioUrl) async {
-    try {
-      if (audioUrl.isNotEmpty) {
-        await _audioPlayer.stop();
-
-        // ATUALIZADO: Verificação para tocar URL ou arquivo local
-        if (audioUrl.startsWith('http')) {
-          await _audioPlayer.setUrl(audioUrl);
-        } else {
-          await _audioPlayer.setAsset(audioUrl);
-        }
-
-        await _audioPlayer.play();
-        setState(() {
-          _currentPlayingMusicId = id;
-        });
-      } 
+      });
     } catch (e) {
-      debugPrint('Erro ao tocar a música: $e');
-    }
-  }
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    switch (index) {
-      case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
-        break;
-      case 1:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const AboutScreen()),
-        );
-        break;
-      case 2:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const ProfileScreen()),
-        );
-        break;
-    }
-  }
-
-  Future<void> _deleteMusic(String docId) async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      try {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('musics')
-            .doc(docId)
-            .delete();
-        
+      debugPrint('Erro ao tocar música: $e');
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Música excluída com sucesso!')),
+          const SnackBar(content: Text('Erro ao tocar música. Verifique o URL.')),
         );
-
-        _loadAllMusic();
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Erro ao excluir música.')),
-        );
-        debugPrint('Erro ao excluir música do Firestore: $e');
       }
     }
   }
 
-  void _showDeleteConfirmationDialog(String docId) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Excluir Música'),
-          content: const Text('Tem certeza que deseja excluir esta música?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _deleteMusic(docId);
-              },
-              child: const Text('Excluir', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
+  void _pauseMusic() {
+    _player.pause();
+    setState(() {
+      _playingIndex = null;
+    });
+  }
+
+  Widget _buildMusicItem(
+      BuildContext context, Map<String, dynamic> music, int index) {
+    final Color primaryPurple = Theme.of(context).primaryColor;
+    final bool isPlaying = _playingIndex == index;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+      color: music['isSelected'] ?? false ? primaryPurple : Colors.white,
+      child: ListTile(
+        leading: Icon(
+          isPlaying ? Icons.pause_circle_filled : Icons.play_circle_fill,
+          color: music['isSelected'] ?? false ? Colors.white : primaryPurple,
+          size: 40,
+        ),
+        title: Text(
+          music['title'] ?? 'Título Desconhecido',
+          style: TextStyle(
+            color: music['isSelected'] ?? false ? Colors.white : Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: Text(
+          // CORREÇÃO: Usar o campo 'artist' para músicas da API
+          music['artist'] ?? 'Artista Desconhecido',
+          style: TextStyle(
+            color: music['isSelected'] ?? false ? Colors.white70 : Colors.grey[600],
+          ),
+        ),
+        trailing: music['isDeletable'] ?? false
+            ? IconButton(
+                icon: Icon(Icons.delete,
+                    color: music['isSelected'] ?? false ? Colors.white : Colors.red),
+                onPressed: () {
+                  _deleteMusic(music['id'].toString());
+                },
+              )
+            : null,
+        onTap: () async {
+          setState(() {
+            _musicList.forEach((m) => m['isSelected'] = false);
+            music['isSelected'] = true;
+          });
+          if (isPlaying) {
+            _pauseMusic();
+          } else {
+            _playMusic(music['audioUrl'], index);
+          }
+        },
+      ),
     );
   }
 
@@ -196,162 +245,33 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
     return Scaffold(
       backgroundColor: primaryPurple,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
+        title: const Text('Escolher Música'),
+        centerTitle: true,
+      ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          _loadAllMusic();
+        },
+        child: ListView.builder(
+          itemCount: _musicList.length + 1,
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return _buildAddMusicCard();
+            }
+            final music = _musicList[index - 1];
+            return _buildMusicItem(context, music, index - 1);
           },
         ),
-        title: const Text(
-          'DoroTEA',
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: primaryPurple,
-        foregroundColor: Colors.white,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16.0,
-                  mainAxisSpacing: 16.0,
-                  childAspectRatio: 0.70,
-                ),
-                itemCount: _allMusicList.length,
-                itemBuilder: (context, index) {
-                  return _buildMusicGridBlock(
-                    _allMusicList[index]['id'] as String,
-                    _allMusicList[index]['title'] as String,
-                    _allMusicList[index]['time'] as String,
-                    _allMusicList[index]['isSelected'] as bool,
-                    _allMusicList[index]['isDeletable'] as bool,
-                    _allMusicList[index]['audioUrl'] as String,
-                    index,
-                    primaryPurple,
-                    lightPurpleText
-                  );
-                },
-              ),
-              const SizedBox(height: 20),
-              _buildAddMusicBlock(lightPurpleText),
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.pets), label: 'Ursinho'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
-        ],
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.white.withOpacity(0.7),
-        backgroundColor: primaryPurple,
-      ),
+      bottomNavigationBar: _buildBottomNavigationBar(lightPurpleText),
     );
   }
 
-  Widget _buildMusicGridBlock(String id, String title, String time, bool isSelected, bool isDeletable, String audioUrl, int index, Color primaryPurple, Color lightPurpleText) {
-    bool isCurrentSongPlaying = _currentPlayingMusicId == id && _audioPlayer.playing;
-
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  children: [
-                    Icon(Icons.music_note, size: 50, color: lightPurpleText),
-                    const SizedBox(height: 8),
-                    Text(
-                      title,
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: lightPurpleText),
-                      textAlign: TextAlign.center,
-                    ),
-                    Text(
-                      time,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-                IconButton(
-                  icon: Icon(
-                    isCurrentSongPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-                    color: lightPurpleText,
-                    size: 40,
-                  ),
-                  onPressed: () {
-                    if (isCurrentSongPlaying) {
-                      _audioPlayer.pause();
-                      setState(() {
-                        _currentPlayingMusicId = null;
-                      });
-                    } else {
-                      _playMusic(id, audioUrl);
-                    }
-                  },
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Selecionar',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isSelected ? lightPurpleText : Colors.grey[600],
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Checkbox(
-                      value: isSelected,
-                      onChanged: (bool? value) {
-                        setState(() {
-                          for (int i = 0; i < _allMusicList.length; i++) {
-                            _allMusicList[i]['isSelected'] = (i == index);
-                          }
-                        });
-                      },
-                      activeColor: lightPurpleText,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          if (isDeletable)
-            Positioned(
-              top: 5,
-              right: 5,
-              child: IconButton(
-                icon: const Icon(Icons.delete_forever, color: Colors.red, size: 24),
-                onPressed: () => _showDeleteConfirmationDialog(id),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAddMusicBlock(Color lightPurpleText) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
+  Widget _buildAddMusicCard() {
+    final Color lightPurpleText = Theme.of(context).colorScheme.secondary;
+    return Container(
+      margin: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       color: Colors.white,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -360,14 +280,19 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
           children: [
             Text(
               'Adicione suas próprias músicas',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: lightPurpleText),
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: lightPurpleText),
             ),
             IconButton(
               icon: Icon(Icons.arrow_forward, color: lightPurpleText),
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const AddMusicScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => AddMusicScreen(email: widget.email),
+                  ),
                 ).then((_) {
                   _loadAllMusic();
                 });
@@ -395,10 +320,31 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
           label: 'Perfil',
         ),
       ],
-      currentIndex: _selectedIndex,
       selectedItemColor: lightPurpleText,
       unselectedItemColor: Colors.grey,
-      onTap: _onItemTapped,
+      onTap: (index) async {
+        if (index == 0) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => HomeScreen(email: widget.email)),
+          );
+        } else if (index == 2) {
+          if (widget.email.isNotEmpty) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ProfileScreen(userEmail: widget.email)),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Por favor, faça login novamente.')),
+            );
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const InitialScreen()),
+            );
+          }
+        }
+      },
     );
   }
 }

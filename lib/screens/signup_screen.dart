@@ -1,11 +1,9 @@
-// lib/signup_screen.dart
+// lib/screens/signup_screen.dart
 import 'package:flutter/material.dart';
-// import 'package:doroteia_login_app/login_screen.dart'; // Você pode querer voltar para a tela de login após o cadastro
-import 'package:dorotea_app/screens/home_screen.dart'; // Importar a tela principal do Doroteia
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Importe o Firebase Auth
-import 'package:cloud_firestore/cloud_firestore.dart'; // Importe o Cloud Firestore
-
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:dorotea_app/screens/login_screen.dart';
+import 'package:dorotea_app/screens/home_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -18,7 +16,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   final TextEditingController _bearCodeController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
@@ -32,125 +31,95 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  void _handleSignUp() async { // <--- Mude para async
-  if (_formKey.currentState!.validate()) {
-    final String fullName = _fullNameController.text.trim();
-    final String email = _emailController.text.trim();
-    final String password = _passwordController.text.trim();
-    final String bearCode = _bearCodeController.text.trim(); // Pode ser opcional
+  void _handleSignUp() async {
+    if (_formKey.currentState!.validate()) {
+      final String fullName = _fullNameController.text.trim();
+      final String email = _emailController.text.trim();
+      final String password = _passwordController.text.trim();
+      final String bearCode = _bearCodeController.text.trim();
 
-    try {
-      // 1. Criar usuário com email e senha usando Firebase Authentication
-      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      const String apiUrl = 'http://127.0.0.1:5000';
+      final url = Uri.parse('$apiUrl/cadastro');
 
-      // 2. Salvar informações adicionais do usuário no Cloud Firestore
-      // O UID (User ID) do Firebase Auth é o identificador único do usuário
-      // e é uma boa prática usá-lo como ID do documento no Firestore.
-      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
-        'fullName': fullName,
-        'email': email,
-        'bearCode': bearCode, // Salva mesmo que seja vazio se o campo não tiver validação
-        'createdAt': Timestamp.now(), // Para registrar quando o usuário foi criado
-      });
+      try {
+        final response = await http.post(
+          url,
+          headers: <String, String>{
+            'Content-Type': 'application/json; charset=UTF-8',
+          },
+          body: jsonEncode(<String, String>{
+            'nome_completo': fullName,
+            'email': email,
+            'senha': password,
+            'codigo_urso': bearCode,
+          }),
+        );
 
-      // Se chegou até aqui, o cadastro e o salvamento no Firestore foram bem-sucedidos
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cadastro efetuado com sucesso!', style: TextStyle(color: Colors.white))),
-      );
-
-      // Após o cadastro bem-sucedido, você pode:
-      // a) Redirecionar para a tela de login para que o usuário se autentique:
-      // Navigator.pop(context); // Volta para a tela anterior (LoginScreen)
-
-      // b) Ou, se você quer que ele já esteja logado e vá para a HomeScreen:
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
-
-    } on FirebaseAuthException catch (e) {
-      String message;
-      if (e.code == 'weak-password') {
-        message = 'A senha fornecida é muito fraca.';
-      } else if (e.code == 'email-already-in-use') {
-        message = 'Este email já está em uso para outra conta.';
-      } else {
-        message = 'Erro ao cadastrar: ${e.message}';
+        if (response.statusCode == 201) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Cadastro realizado com sucesso!')),
+          );
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+          );
+        } else {
+          final errorBody = jsonDecode(response.body);
+          String errorMessage = 'Ocorreu um erro. Tente novamente.';
+          if (errorBody != null && errorBody['erro'] != null) {
+            errorMessage = errorBody['erro'];
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(errorMessage)),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Erro ao conectar com a API. Verifique sua conexão.')),
+        );
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message, style: TextStyle(color: Colors.white))),
-      );
-      debugPrint('Erro de cadastro Firebase: ${e.code} - ${e.message}');
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ocorreu um erro inesperado. Tente novamente.', style: TextStyle(color: Colors.white))),
-      );
-      debugPrint('Erro geral de cadastro: $e');
     }
   }
-}
+
+  void _navigateToLogin() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    // As cores do tema serão puxadas de main.dart
+    // ... (restante do código, sem mudanças)
     final Color primaryPurple = Theme.of(context).primaryColor;
-    final Color lightPurpleText = Theme.of(context).colorScheme.secondary; // Cor do texto de destaque
-
     return Scaffold(
-      backgroundColor: primaryPurple, // Fundo roxo consistente
-      appBar: AppBar(
-        title: const Text('Cadastro'), // Título da AppBar conforme a imagem
-        // O estilo da AppBar (cor, texto branco) virá do main.dart
-      ),
+      backgroundColor: primaryPurple,
       body: Center(
         child: SingleChildScrollView(
-          // Adiciona padding para o conteúdo não ficar colado nas bordas
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              // Ursinho pequeno
-              Image.asset(
-                'assets/bear_logo.png',
-                height: 80.0, // Tamanho consistente com a tela de Login
-                fit: BoxFit.contain,
-              ),
+              Image.asset('assets/bear_logo.png', height: 100.0),
               const SizedBox(height: 20.0),
-
-              // Texto "É um prazer ter você aqui!"
-              Text(
-                'É um prazer ter você aqui!\nPreencha os campos com atenção.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20.0,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 40.0), // Espaçamento antes dos campos
-
-              // Container para os campos de entrada e botão (fundo branco)
+              Image.asset('assets/dorotea_text.png', height: 80.0),
+              const SizedBox(height: 40.0),
               Container(
                 padding: const EdgeInsets.all(24.0),
                 decoration: BoxDecoration(
-                  color: Colors.white, // Fundo branco dos campos
-                  borderRadius: BorderRadius.circular(20.0), // Borda arredondada
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20.0),
                 ),
                 child: Form(
                   key: _formKey,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch, // Estica os elementos
                     children: <Widget>[
-                      // Campo "Nome completo"
                       TextFormField(
                         controller: _fullNameController,
-                        keyboardType: TextInputType.text,
                         decoration: const InputDecoration(
-                          labelText: 'Nome completo:',
-                          hintText: 'Digite seu nome completo',
+                          labelText: 'Nome Completo',
+                          prefixIcon: Icon(Icons.person),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -160,34 +129,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         },
                       ),
                       const SizedBox(height: 16.0),
-
-                      // Campo de E-mail
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
                         decoration: const InputDecoration(
-                          labelText: 'Email:',
-                          hintText: 'Digite seu email',
+                          labelText: 'Email',
+                          prefixIcon: Icon(Icons.email),
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor, digite seu email';
-                          }
-                          if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                            return 'Email inválido';
+                          if (value == null || value.isEmpty || !value.contains('@')) {
+                            return 'Por favor, digite um email válido';
                           }
                           return null;
                         },
                       ),
                       const SizedBox(height: 16.0),
-
-                      // Campo de Senha
                       TextFormField(
                         controller: _passwordController,
                         obscureText: true,
                         decoration: const InputDecoration(
-                          labelText: 'Senha:',
-                          hintText: 'Crie sua senha',
+                          labelText: 'Senha',
+                          prefixIcon: Icon(Icons.lock),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -200,14 +162,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         },
                       ),
                       const SizedBox(height: 16.0),
-
-                      // Campo de Confirmar Senha
                       TextFormField(
                         controller: _confirmPasswordController,
                         obscureText: true,
                         decoration: const InputDecoration(
-                          labelText: 'Confirme a senha:',
-                          hintText: 'Confirme sua senha',
+                          labelText: 'Confirme a senha',
+                          prefixIcon: Icon(Icons.lock),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -220,20 +180,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         },
                       ),
                       const SizedBox(height: 16.0),
-
-                      // Campo "Código do Urso" (sem validação)
                       TextFormField(
                         controller: _bearCodeController,
-                        keyboardType: TextInputType.number, // Sugere teclado numérico
+                        keyboardType: TextInputType.text,
                         decoration: const InputDecoration(
                           labelText: 'Código do urso:',
-                          hintText: 'Digite o código do seu urso (opcional)',
+                          hintText: 'Digite o código do seu urso',
+                          prefixIcon: Icon(Icons.pets),
                         ),
-                        // NENHUM 'validator' para este campo, conforme solicitado.
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Por favor, digite o código do urso';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 24.0),
-
-                      // Botão "CADASTRAR"
                       ElevatedButton(
                         onPressed: _handleSignUp,
                         child: const Text('CADASTRAR'),
@@ -243,6 +205,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
               const SizedBox(height: 20.0),
+              TextButton(
+                onPressed: _navigateToLogin,
+                child: const Text('Já tem uma conta? Entrar'),
+              ),
             ],
           ),
         ),

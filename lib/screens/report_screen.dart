@@ -1,3 +1,4 @@
+// lib/screens/report_screen.dart
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
@@ -5,7 +6,8 @@ import 'package:dorotea_app/models/humor_event.dart';
 import 'package:dorotea_app/humor_data_generator.dart';
 
 class ReportScreen extends StatefulWidget {
-  const ReportScreen({Key? key}) : super(key: key);
+  final String userEmail;
+  const ReportScreen({super.key, required this.userEmail});
 
   @override
   State<ReportScreen> createState() => _ReportScreenState();
@@ -39,7 +41,6 @@ class _ReportScreenState extends State<ReportScreen> {
     });
   }
 
-  // Mapeia o valor do humor para um ícone
   IconData _getHumorIcon(int humorValue) {
     switch (humorValue) {
       case 1:
@@ -83,7 +84,7 @@ class _ReportScreenState extends State<ReportScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Gráfiiiiiico de Humor',
+                      'Gráfico de Humor',
                       style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 10),
@@ -98,7 +99,9 @@ class _ReportScreenState extends State<ReportScreen> {
                             child: ElevatedButton(
                               onPressed: () => _filterData(timeframe),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: _selectedTimeframe == timeframe ? primaryPurple.withOpacity(0.8) : Colors.grey[200],
+                                backgroundColor: _selectedTimeframe == timeframe
+                                    ? primaryPurple.withAlpha(204)
+                                    : Colors.grey[200],
                                 foregroundColor: _selectedTimeframe == timeframe ? Colors.white : Colors.black,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               ),
@@ -117,8 +120,8 @@ class _ReportScreenState extends State<ReportScreen> {
                         LineChartData(
                           minX: 0,
                           maxX: (_filteredData.length - 1).toDouble(),
-                          minY: 1, // Minimo 1
-                          maxY: 5, // Máximo 5
+                          minY: 1,
+                          maxY: 5,
                           gridData: FlGridData(
                             show: true,
                             drawVerticalLine: true,
@@ -137,6 +140,7 @@ class _ReportScreenState extends State<ReportScreen> {
                             bottomTitles: AxisTitles(
                               sideTitles: SideTitles(
                                 showTitles: true,
+                                reservedSize: 30,
                                 getTitlesWidget: (value, meta) {
                                   final index = value.toInt();
                                   if (index < 0 || index >= _filteredData.length) {
@@ -151,13 +155,14 @@ class _ReportScreenState extends State<ReportScreen> {
                                   }
                                   return SideTitleWidget(
                                     axisSide: meta.axisSide,
+                                    space: 8.0,
                                     child: Text(
                                       DateFormat(format).format(event.dataHora),
                                       style: const TextStyle(fontSize: 10),
                                     ),
                                   );
                                 },
-                                interval: _filteredData.length > 10 ? (_filteredData.length / 5).floorToDouble() : 1, // Ajusta o intervalo dinamicamente
+                                interval: 1,
                               ),
                             ),
                             leftTitles: AxisTitles(
@@ -166,13 +171,20 @@ class _ReportScreenState extends State<ReportScreen> {
                                 interval: 1,
                                 reservedSize: 40,
                                 getTitlesWidget: (value, meta) {
-                                  return Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      Text(value.toInt().toString(), style: const TextStyle(fontSize: 12)),
-                                      const SizedBox(width: 4),
-                                      Icon(_getHumorIcon(value.toInt()), size: 16),
-                                    ],
+                                  if (value.toInt() < 1 || value.toInt() > 5) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return SideTitleWidget(
+                                    axisSide: meta.axisSide,
+                                    space: 8.0,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(_getHumorIcon(value.toInt()), size: 16, color: Colors.grey[700]),
+                                        const SizedBox(width: 4),
+                                        Text(value.toInt().toString(), style: const TextStyle(fontSize: 12, color: Color.fromARGB(255, 77, 76, 76))),
+                                      ],
+                                    ),
                                   );
                                 },
                               ),
@@ -184,7 +196,7 @@ class _ReportScreenState extends State<ReportScreen> {
                                 return FlSpot(entry.key.toDouble(), entry.value.humor.toDouble());
                               }).toList(),
                               isCurved: true,
-                              color: primaryPurple.withOpacity(0.8),
+                              color: primaryPurple.withAlpha(204),
                               barWidth: 3,
                               isStrokeCapRound: true,
                               dotData: FlDotData(
@@ -199,7 +211,7 @@ class _ReportScreenState extends State<ReportScreen> {
                               ),
                               belowBarData: BarAreaData(
                                 show: true,
-                                color: primaryPurple.withOpacity(0.3),
+                                color: primaryPurple.withAlpha(76),
                               ),
                             ),
                           ],
@@ -213,14 +225,12 @@ class _ReportScreenState extends State<ReportScreen> {
             
             const SizedBox(height: 40),
             
-            // Lista de Eventos (Cards de Relatório)
             const Text(
               'Relatórios Detalhados',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const SizedBox(height: 20),
             
-            // Lista de Eventos
             _filteredData.isEmpty
                 ? const Center(child: Text('Nenhum dado encontrado para o período.', style: TextStyle(color: Colors.white)))
                 : ListView.builder(
