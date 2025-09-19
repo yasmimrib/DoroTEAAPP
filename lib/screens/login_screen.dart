@@ -1,11 +1,10 @@
-// lib/screens/login_screen.dart
+// Tela de Login
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:dorotea_app/screens/home_screen.dart';
-import 'package:flutter/material.dart';
-import 'package:dorotea_app/screens/signup_screen.dart'; // Importe a tela de cadastro
-import 'package:dorotea_app/screens/home_screen.dart';
+import 'package:dorotea_app/screens/signup_screen.dart'; 
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -60,10 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Erro ao conectar com a API. Verifique sua conexão.')),
-        );
+        print('Erro ao conectar com a API. Verifique sua conexão.');
       }
     }
   }
@@ -85,53 +81,94 @@ void _navigateToSignUp() {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-  body: SingleChildScrollView(
-    padding: const EdgeInsets.all(16.0),
-    child: Form(
-      key: _formKey,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          const SizedBox(height: 100),
-          Image.asset('assets/bear_logo.png', height: 150),
-          const SizedBox(height: 50),
-          TextFormField(
-            controller: _emailController,
-            decoration: const InputDecoration(labelText: 'E-mail'),
-            keyboardType: TextInputType.emailAddress,
-            validator: (value) {
-              if (value == null || value.isEmpty || !value.contains('@')) {
-                return 'Por favor, insira um e-mail válido.';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16.0),
-          TextFormField(
-            controller: _passwordController,
-            decoration: const InputDecoration(labelText: 'Senha'),
-            obscureText: true,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Por favor, insira sua senha.';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 24.0),
-          ElevatedButton(
-            onPressed: _login,
-            child: const Text('Entrar'),
-          ),
-          const SizedBox(height: 20.0), // Espaço entre botão de login e cadastro
-          TextButton(
-            onPressed: _navigateToSignUp,
-            child: const Text('Cadastrar'),
-          ),
-          const SizedBox(height: 10.0),
-        ],
+    body: SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            const SizedBox(height: 100),
+            Image.asset('assets/bear_logo.png', height: 200),
+            const Text(
+              'Estamos felizes em te ver de novo!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20.0,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 40.0),
+            Container(
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12.0),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _emailController,
+                    decoration: const InputDecoration(labelText: 'E-mail'),
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor, insira um e-mail.';
+                      }
+                      final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                      if (!emailRegex.hasMatch(value)) {
+                        return 'Por favor, insira um e-mail válido.';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16.0),
+                  TextFormField(
+                    controller: _passwordController,
+                    decoration: const InputDecoration(
+                      labelText: 'Senha',
+                      alignLabelWithHint: true,
+                    ),
+                    obscureText: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor, insira sua senha.';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24.0),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(200, 50),
+                textStyle: const TextStyle(
+                  fontSize: 20,
+                  fontFamily: 'Roboto',
+                ),
+              ),
+              onPressed: _login,
+              child: const Text('ENTRAR'),
+            ),
+            const SizedBox(height: 20.0),
+            TextButton(
+              onPressed: _navigateToSignUp,
+              child: const Text('Cadastrar'),
+            ),
+            const SizedBox(height: 10.0),
+          ],
+        ),
       ),
     ),
-  ),
-);
+  );
   }}

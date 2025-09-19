@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:dorotea_app/screens/login_screen.dart';
-import 'package:dorotea_app/screens/home_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -16,8 +15,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
   final TextEditingController _bearCodeController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
@@ -29,6 +27,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _confirmPasswordController.dispose();
     _bearCodeController.dispose();
     super.dispose();
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    bool obscure = false,
+    String? hint,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+      ),
+      obscureText: obscure,
+      keyboardType: keyboardType,
+      validator: validator,
+    );
   }
 
   void _handleSignUp() async {
@@ -91,7 +109,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ... (restante do código, sem mudanças)
     final Color primaryPurple = Theme.of(context).primaryColor;
     return Scaffold(
       backgroundColor: primaryPurple,
@@ -101,9 +118,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Image.asset('assets/bear_logo.png', height: 100.0),
+              Image.asset('assets/bear_logo.png', height: 200.0),
               const SizedBox(height: 20.0),
-              Image.asset('assets/dorotea_text.png', height: 80.0),
+              const Text(
+                'É um prazer ter você aqui!\nPreencha os campos com atenção.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20.0,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               const SizedBox(height: 40.0),
               Container(
                 padding: const EdgeInsets.all(24.0),
@@ -115,12 +140,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   key: _formKey,
                   child: Column(
                     children: <Widget>[
-                      TextFormField(
+                      _buildTextField(
                         controller: _fullNameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nome Completo',
-                          prefixIcon: Icon(Icons.person),
-                        ),
+                        label: 'Nome Completo',
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Por favor, digite seu nome completo';
@@ -129,28 +151,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         },
                       ),
                       const SizedBox(height: 16.0),
-                      TextFormField(
+                      _buildTextField(
                         controller: _emailController,
+                        label: 'Email',
                         keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          prefixIcon: Icon(Icons.email),
-                        ),
                         validator: (value) {
-                          if (value == null || value.isEmpty || !value.contains('@')) {
+                          if (value == null || value.isEmpty) {
+                            return 'Por favor, digite um email válido';
+                          }
+                          final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                          if (!emailRegex.hasMatch(value)) {
                             return 'Por favor, digite um email válido';
                           }
                           return null;
                         },
                       ),
                       const SizedBox(height: 16.0),
-                      TextFormField(
+                      _buildTextField(
                         controller: _passwordController,
-                        obscureText: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Senha',
-                          prefixIcon: Icon(Icons.lock),
-                        ),
+                        label: 'Senha',
+                        obscure: true,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Por favor, digite sua senha';
@@ -162,13 +182,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         },
                       ),
                       const SizedBox(height: 16.0),
-                      TextFormField(
+                      _buildTextField(
                         controller: _confirmPasswordController,
-                        obscureText: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Confirme a senha',
-                          prefixIcon: Icon(Icons.lock),
-                        ),
+                        label: 'Confirme a senha',
+                        obscure: true,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Por favor, confirme sua senha';
@@ -180,14 +197,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         },
                       ),
                       const SizedBox(height: 16.0),
-                      TextFormField(
+                      _buildTextField(
                         controller: _bearCodeController,
-                        keyboardType: TextInputType.text,
-                        decoration: const InputDecoration(
-                          labelText: 'Código do urso:',
-                          hintText: 'Digite o código do seu urso',
-                          prefixIcon: Icon(Icons.pets),
-                        ),
+                        label: 'Código do urso:',
+                        hint: 'Digite o código do seu urso',
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Por favor, digite o código do urso';
@@ -197,6 +210,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                       const SizedBox(height: 24.0),
                       ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(200, 50),
+                          textStyle: const TextStyle(
+                            fontSize: 20,
+                            fontFamily: 'Roboto',
+                          ),
+                        ),
                         onPressed: _handleSignUp,
                         child: const Text('CADASTRAR'),
                       ),

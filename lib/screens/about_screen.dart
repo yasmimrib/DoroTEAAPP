@@ -1,63 +1,203 @@
-// lib/about_screen.dart
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:dorotea_app/screens/home_screen.dart';
+import 'package:dorotea_app/screens/profile_screen.dart';
 
-class AboutScreen extends StatelessWidget {
+class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
 
   @override
+  State<AboutScreen> createState() => _AboutScreenState();
+}
+
+class _AboutScreenState extends State<AboutScreen> {
+  int _selectedIndex = 1; // "DoroTEA" selecionado por padrão
+  final Color primaryPurple = const Color(0xFF6A5AE0);
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    switch (index) {
+      case 0:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const HomeScreen(email: 'user@email.com'),
+          ),
+        );
+        break;
+      case 1:
+        // já estamos na tela About, nada precisa fazer
+        break;
+      case 2:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ProfileScreen(userEmail: 'user@email.com'),
+          ),
+        );
+        break;
+    }
+  }
+
+  Future<void> _openLink(String url) async {
+    final Uri uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      throw 'Não foi possível abrir o link $url';
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Cores do tema, puxadas de main.dart
-    final Color primaryPurple = Theme.of(context).primaryColor;
-    final Color lightPurpleText = Theme.of(context).colorScheme.secondary;
-    final Color textColorOnPrimary = Theme.of(context).elevatedButtonTheme.style?.foregroundColor?.resolve({}) ?? Colors.white;
-
     return Scaffold(
-      backgroundColor: primaryPurple, // Fundo roxo consistente
+      backgroundColor: primaryPurple,
       appBar: AppBar(
-        title: const Text('Sobre'), // Título da AppBar conforme a imagem
-        centerTitle: true, // Centraliza o título
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 30.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              // Imagem do Urso
-              Image.asset(
-                'assets/bear_logo.png', // O mesmo ursinho usado nas telas de login
-                height: 100.0, // Ajuste o tamanho conforme necessário
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(height: 30.0),
-
-              // Container com o texto explicativo
-              Container(
-                padding: const EdgeInsets.all(24.0),
-                decoration: BoxDecoration(
-                  color: Colors.white, // Fundo branco
-                  borderRadius: BorderRadius.circular(20.0), // Borda arredondada
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      'O DoroTEA é uma babá eletrônica pensada para crianças com TEA. Com câmeras inteligentes, monitora o comportamento da criança e avisa os pais em caso de sinais de crise ou desconforto. Pelo app, dá pra acompanhar tudo em tempo real e escolher músicas terapêuticas que o ursinho toca, ajudando a acalmar e trazer bem-estar mesmo quando você não está por perto.',
-                      textAlign: TextAlign.justify, // Justifica o texto
-                      style: TextStyle(
-                        color: Colors.grey[800], // Cor do texto
-                        fontSize: 16.0,
-                        height: 1.5, // Espaçamento entre linhas
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20.0),
-            ],
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          'DoroTEA',
+          style: GoogleFonts.quicksand(
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+            letterSpacing: 1.2,
           ),
         ),
+        centerTitle: true,
       ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          children: [
+            // Ursinho
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(30),
+              child: Image.asset(
+                'assets/bear_logo.png',
+                height: 120,
+                width: 120,
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(height: 25),
+            // Card de explicação
+            _buildInfoCard(),
+            const SizedBox(height: 25),
+            // Botão
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(200, 50),
+                textStyle: const TextStyle(
+                  fontSize: 20,
+                  fontFamily: 'Roboto',
+                ),
+              ),
+              onPressed: () => _openLink('https://www.seulink.com'),
+              child: const Text("Ver Funcionalidades"),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: primaryPurple,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white.withOpacity(0.7),
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.pets),
+            label: 'DoroTEA',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Perfil',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard() {
+    return Container(
+      padding: const EdgeInsets.all(20.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(25),
+        boxShadow: [
+          BoxShadow(
+            color: primaryPurple.withOpacity(0.12),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "O que é o DoroTEA?",
+            style: GoogleFonts.quicksand(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 15),
+          Text(
+            "O DoroTEA é um aplicativo desenvolvido para apoiar "
+            "crianças com Transtorno do Espectro Autista (TEA), "
+            "atuando como um sistema inteligente de prevenção de crises.",
+            style: GoogleFonts.roboto(
+              fontSize: 16,
+              height: 1.5,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildFeatureRow(Icons.videocam,
+              "Monitora expressões faciais e movimentos por câmeras inteligentes."),
+          const SizedBox(height: 12),
+          _buildFeatureRow(Icons.music_note,
+              "Aplica músicas terapêuticas para acalmar a criança durante crises."),
+          const SizedBox(height: 12),
+          _buildFeatureRow(Icons.favorite,
+              "Oferece apoio emocional, criando um ambiente mais acolhedor."),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeatureRow(IconData icon, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: Colors.deepPurple),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: GoogleFonts.roboto(fontSize: 15, height: 1.4),
+          ),
+        ),
+      ],
     );
   }
 }
