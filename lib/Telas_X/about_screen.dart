@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:dorotea_app/screens/home_screen.dart';
-import 'package:dorotea_app/screens/profile_screen.dart';
+import 'package:dorotea_app/Telas_X/home_screen.dart';
+import 'package:dorotea_app/Telas_X/profile_screen.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -13,7 +13,7 @@ class AboutScreen extends StatefulWidget {
 
 class _AboutScreenState extends State<AboutScreen> {
   int _selectedIndex = 1; // "DoroTEA" selecionado por padrão
-  final Color primaryPurple = const Color(0xFF6A5AE0);
+  final Color primaryPurple = Color.fromARGB(255, 181, 154, 230);
 
   void _onItemTapped(int index) {
     setState(() {
@@ -105,8 +105,8 @@ class _AboutScreenState extends State<AboutScreen> {
                   fontFamily: 'Roboto',
                 ),
               ),
-              onPressed: () => _openLink('https://www.seulink.com'),
-              child: const Text("Ver Funcionalidades"),
+              onPressed: () => _openLink('https://www.notion.so/DoroTEA-20c790eced358037b04fd48ca71d46c1?source=copy_link'),
+              child: const Text("Confira nossa diário de bordo!"),
             ),
           ],
         ),
@@ -162,7 +162,7 @@ class _AboutScreenState extends State<AboutScreen> {
           ),
           const SizedBox(height: 15),
           Text(
-            "O DoroTEA é um aplicativo desenvolvido para apoiar "
+            "DoroTEA é um projeto desenvolvido para auxiliar "
             "crianças com Transtorno do Espectro Autista (TEA), "
             "atuando como um sistema inteligente de prevenção de crises.",
             style: GoogleFonts.roboto(

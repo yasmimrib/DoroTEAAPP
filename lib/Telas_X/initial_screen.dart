@@ -1,6 +1,6 @@
 //tela inicial
 import 'package:flutter/material.dart';
-import 'package:dorotea_app/screens/login_screen.dart'; 
+import 'package:dorotea_app/Telas_X/login_screen.dart'; 
 
 class InitialScreen extends StatelessWidget {
   const InitialScreen({super.key});

@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:dorotea_app/screens/login_screen.dart';
+import 'package:dorotea_app/Telas_X/login_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -56,7 +56,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       final String password = _passwordController.text.trim();
       final String bearCode = _bearCodeController.text.trim();
 
-      const String apiUrl = 'http://127.0.0.1:5000';
+      const String apiUrl = 'http://192.168.0.107:5000';
       final url = Uri.parse('$apiUrl/cadastro');
 
       try {
@@ -69,6 +69,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             'nome_completo': fullName,
             'email': email,
             'senha': password,
+            'confirme_senha': _confirmPasswordController.text.trim(),
             'codigo_urso': bearCode,
           }),
         );

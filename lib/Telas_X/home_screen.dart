@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:dorotea_app/screens/profile_screen.dart';
-import 'package:dorotea_app/screens/about_screen.dart';
+import 'package:dorotea_app/Telas_X/profile_screen.dart';
+import 'package:dorotea_app/Telas_X/about_screen.dart';
 import 'package:dorotea_app/screens/music_selection_screen.dart';
 import 'package:dorotea_app/screens/report_screen.dart';
-
-
+import 'package:dorotea_app/screens/camera_screen.dart'; // Importe a tela da câmera
+import 'package:dorotea_app/screens/guide_music.dart'; // Importe a nova tela
 
 class HomeScreen extends StatefulWidget {
   final String email;
@@ -18,7 +18,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   late final List<Map<String, dynamic>> _featureCards;
-  final List<bool> _isPressed = [false, false, false];
+  // Aumente a lista para incluir o novo botão
+  final List<bool> _isPressed = [false, false, false, false];
 
   @override
   void initState() {
@@ -29,7 +30,13 @@ class _HomeScreenState extends State<HomeScreen> {
         'title': 'Visualizar Agora',
         'description': 'Acompanhe em tempo real como está seu pequeno',
         'onTap': () {
-          debugPrint('Visualizar Agora clicado!');
+          // Ação para a tela da câmera
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CameraScreen(email: widget.email),
+            ),
+          );
         },
       },
       {
@@ -40,8 +47,22 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
+              builder: (context) => MusicSelectionScreen(email: widget.email),
+            ),
+          );
+        },
+      },
+      {
+        'icon': Icons.headphones, // Novo ícone para musicoterapia guiada
+        'title': 'Terapia Guiada',
+        'description': 'Inicie uma sessão de musicoterapia guiada com o Dorotea',
+        'onTap': () {
+          // Ação para a tela de musicoterapia guiada
+          Navigator.push(
+            context,
+            MaterialPageRoute(
               builder: (context) =>
-                  MusicSelectionScreen(email: widget.email),
+                  GuidedMusic(email: widget.email),
             ),
           );
         },
@@ -54,15 +75,13 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) =>
-                  ReportScreen(userEmail: widget.email),
+              builder: (context) => ReportScreen(userEmail: widget.email),
             ),
           );
         },
       },
     ];
   }
-
 
   void _onItemTapped(int index) {
     setState(() {
@@ -83,8 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                ProfileScreen(userEmail: widget.email),
+            builder: (context) => ProfileScreen(userEmail: widget.email),
           ),
         );
         break;
@@ -179,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
-        color: Colors.white, // <-- aqui substituí o gradient pelo branco fixo
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20.0),
         boxShadow: [
           BoxShadow(

@@ -1,9 +1,12 @@
-// lib/screens/report_screen.dart
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:dorotea_app/models/humor_event.dart';
 import 'package:dorotea_app/humor_data_generator.dart';
+import 'package:dorotea_app/Telas_X/profile_screen.dart'; // Importe a tela de Perfil
+import 'package:dorotea_app/Telas_X/about_screen.dart'; // Importe a tela Sobre
+import 'package:dorotea_app/Telas_X/home_screen.dart'; // Importe a tela Home
 
 class ReportScreen extends StatefulWidget {
   final String userEmail;
@@ -17,6 +20,7 @@ class _ReportScreenState extends State<ReportScreen> {
   late List<HumorEvent> _humorData;
   late List<HumorEvent> _filteredData;
   String _selectedTimeframe = 'Semana';
+  int _selectedIndex = 0; // Adicione esta variável
 
   @override
   void initState() {
@@ -24,6 +28,37 @@ class _ReportScreenState extends State<ReportScreen> {
     _humorData = generateSimulatedData();
     _filterData(_selectedTimeframe);
   }
+
+  // --- Adicione esta lógica de navegação ---
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomeScreen(email: widget.userEmail)),
+        );
+        break;
+      case 1:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const AboutScreen()),
+        );
+        break;
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProfileScreen(userEmail: widget.userEmail),
+          ),
+        );
+        break;
+    }
+  }
+  // --- Fim da lógica de navegação ---
 
   void _filterData(String timeframe) {
     setState(() {
@@ -34,10 +69,13 @@ class _ReportScreenState extends State<ReportScreen> {
           return now.difference(event.dataHora).inHours <= 24;
         } else if (timeframe == 'Semana') {
           return now.difference(event.dataHora).inDays <= 7;
-        } else { // Mês
+        } else {
           return now.difference(event.dataHora).inDays <= 30;
         }
       }).toList();
+      
+      // Ordena os dados para que o gráfico seja desenhado corretamente
+      _filteredData.sort((a, b) => a.dataHora.compareTo(b.dataHora));
     });
   }
 
@@ -65,16 +103,22 @@ class _ReportScreenState extends State<ReportScreen> {
     return Scaffold(
       backgroundColor: primaryPurple,
       appBar: AppBar(
-        title: const Text('Relatórios de Humor', style: TextStyle(color: Colors.white)),
-        backgroundColor: primaryPurple,
-        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text(
+          'DoroTEA',
+          style: GoogleFonts.quicksand(
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+            letterSpacing: 1.2,
+          ),
+        ),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Contêiner para o Gráfico e Botões de Filtro
             Card(
               elevation: 4,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
@@ -88,8 +132,6 @@ class _ReportScreenState extends State<ReportScreen> {
                       style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 10),
-
-                    // Botões de Filtro de Período
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: ['Dia', 'Semana', 'Mês'].map((timeframe) {
@@ -112,8 +154,6 @@ class _ReportScreenState extends State<ReportScreen> {
                       }).toList(),
                     ),
                     const SizedBox(height: 20),
-                    
-                    // Gráfico de Linha
                     SizedBox(
                       height: 200,
                       child: LineChart(
@@ -148,21 +188,25 @@ class _ReportScreenState extends State<ReportScreen> {
                                   }
                                   final event = _filteredData[index];
                                   String format;
+                                  // Adiciona uma lógica para ajustar o formato da data
                                   if (_selectedTimeframe == 'Dia') {
-                                    format = 'HH:mm';
-                                  } else {
-                                    format = 'dd/MM';
+                                    format = 'HH:mm'; // Ex: 14:30
+                                  } else if (_selectedTimeframe == 'Semana') {
+                                    format = 'EE'; // Ex: Seg, Ter, Qua
+                                  } else { // Mês
+                                    format = 'dd/MM'; // Ex: 25/10
                                   }
                                   return SideTitleWidget(
                                     axisSide: meta.axisSide,
                                     space: 8.0,
                                     child: Text(
-                                      DateFormat(format).format(event.dataHora),
+                                      DateFormat(format, 'pt_BR').format(event.dataHora),
                                       style: const TextStyle(fontSize: 10),
                                     ),
                                   );
                                 },
-                                interval: 1,
+                                // Ajusta o intervalo para que os rótulos não se sobreponham
+                                interval: _filteredData.length > 7 ? 2 : 1,
                               ),
                             ),
                             leftTitles: AxisTitles(
@@ -264,6 +308,27 @@ class _ReportScreenState extends State<ReportScreen> {
                   ),
           ],
         ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: primaryPurple,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white.withOpacity(0.7),
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.pets),
+            label: 'DoroTEA',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Perfil',
+          ),
+        ],
       ),
     );
   }

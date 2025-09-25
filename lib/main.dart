@@ -1,8 +1,7 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
-
-import 'screens/initial_screen.dart'; // Importe a tela inicial
-import 'screens/home_screen.dart'; // Importe a tela inicial
+import 'Telas_X/initial_screen.dart'; // Importe a tela inicial
+import 'Telas_X/home_screen.dart'; // Importe a tela inicial
 
 
 void main() async {
@@ -110,7 +109,7 @@ class MyApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      home: const HomeScreen(email: 'teste@teste.com'),
+      home: const InitialScreen(), // Define a tela inicial do aplicativo
     );
   }
 }

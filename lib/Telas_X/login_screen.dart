@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:dorotea_app/screens/home_screen.dart';
-import 'package:dorotea_app/screens/signup_screen.dart'; 
+import 'package:dorotea_app/Telas_X/home_screen.dart';
+import 'package:dorotea_app/Telas_X/signup_screen.dart'; 
 
 
 class LoginScreen extends StatefulWidget {
@@ -23,7 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final email = _emailController.text.trim();
       final senha = _passwordController.text.trim();
 
-      const String apiUrl = 'http://127.0.0.1:5000';
+      const String apiUrl = 'http://192.168.0.110:5000';
       final url = Uri.parse('$apiUrl/login');
 
       try {
