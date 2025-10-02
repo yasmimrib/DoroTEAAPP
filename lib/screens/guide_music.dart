@@ -14,7 +14,7 @@ class GuidedMusic extends StatefulWidget {
 }
 
 class _GuidedMusicState extends State<GuidedMusic> {
-  static const String _serverIp = 'http://192.168.0.110:5000';
+  static const String _serverIp = 'http://127.0.0.1:5000';
 
   final List<Map<String, dynamic>> _defaultMusicList = [
     {

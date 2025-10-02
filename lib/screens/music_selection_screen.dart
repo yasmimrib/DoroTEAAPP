@@ -7,6 +7,7 @@ import 'package:dorotea_app/screens/add_music_screen.dart';
 import 'package:dorotea_app/Telas_X/profile_screen.dart';
 import 'package:dorotea_app/Telas_X/about_screen.dart';
 import 'package:dorotea_app/Telas_X/home_screen.dart';
+import 'package:dorotea_app/constants.dart'; // apiUrl
 
 class MusicSelectionScreen extends StatefulWidget {
   final String email;
@@ -17,9 +18,6 @@ class MusicSelectionScreen extends StatefulWidget {
 }
 
 class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
-  // IP DO SERVIDOR FLASK (Ajustado para 192.168.0.110)
-  static const String _serverIp = 'http://192.168.0.110:5000';
-
   final List<Map<String, dynamic>> _defaultMusicList = [
     {
       'id': 'bmp',
@@ -61,7 +59,7 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
   late List<Map<String, dynamic>> _userMusicList;
   final _player = AudioPlayer();
   int? _playingIndex;
-  int _selectedIndex = 0; // Índice para a tela de Músicas
+  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -76,7 +74,6 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
     super.dispose();
   }
 
-  // --- NOVA LÓGICA DE NAVEGAÇÃO ---
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -99,24 +96,22 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                ProfileScreen(userEmail: widget.email),
+            builder: (context) => ProfileScreen(userEmail: widget.email),
           ),
         );
         break;
     }
   }
-  // --- FIM DA NOVA LÓGICA DE NAVEGAÇÃO ---
 
-  void _loadUserMusic() async {
+  // ✅ Corrigido: retorna Future<void> para RefreshIndicator
+  Future<void> _loadUserMusic() async {
     final String userEmail = widget.email;
     if (userEmail.isEmpty) {
       debugPrint('Usuário não logado.');
       return;
     }
-    
-    // URL de carregamento ajustada para o IP
-    final url = Uri.parse('$_serverIp/musics/$userEmail'); 
+
+    final url = Uri.parse('${AppConfig.apiUrl}/musics/$userEmail');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -128,7 +123,7 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
             'id': music['id'].toString(),
             'title': music['title'] ?? 'Sem Título',
             'artist': music['artist'] ?? 'Sem Artista',
-            'audioUrl': music['audioUrl'] ?? '', // Usa a chave correta 'audioUrl'
+            'audioUrl': music['audioUrl'] ?? '',
             'isDeletable': music['isDeletable'] ?? true,
           };
         }));
@@ -145,8 +140,7 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
   }
 
   Future<void> _deleteMusic(String musicId) async {
-    // URL de deleção ajustada para o IP
-    final url = Uri.parse('$_serverIp/delete_music/$musicId'); 
+    final url = Uri.parse('${AppConfig.apiUrl}/delete_music/$musicId');
     try {
       final response = await http.delete(url);
       if (response.statusCode == 200) {
@@ -155,7 +149,7 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
             const SnackBar(content: Text('Música deletada com sucesso!')),
           );
         }
-        _loadUserMusic();
+        await _loadUserMusic();
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -178,8 +172,7 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
       if (_player.playing) {
         await _player.stop();
       }
-      // Verifica se é um asset (músicas padrão) ou um URL (músicas do usuário)
-      if (audioUrl.startsWith('assets/')) { 
+      if (audioUrl.startsWith('assets/')) {
         await _player.setAsset(audioUrl);
       } else {
         await _player.setUrl(audioUrl);
@@ -226,8 +219,7 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
     );
   }
 
-  Widget _buildMusicItem(
-      BuildContext context, Map<String, dynamic> music, int index) {
+  Widget _buildMusicItem(BuildContext context, Map<String, dynamic> music, int index) {
     final Color primaryPurple = Theme.of(context).primaryColor;
     final bool isPlaying = _playingIndex == index;
     return Card(
@@ -275,93 +267,6 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final Color primaryPurple = Theme.of(context).primaryColor;
-    return Scaffold(
-      backgroundColor: primaryPurple,
-      appBar: AppBar(
-        title: Text(
-          'DoroTEA',
-          style: GoogleFonts.quicksand(
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-            letterSpacing: 1.2,
-          ),
-        ),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-      ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          _loadUserMusic();
-        },
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildAddMusicCard(),
-              _buildMusicSectionHeader('Músicas do Usuário'),
-              if (_userMusicList.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Center(
-                    child: Text(
-                      'Nenhuma música adicionada ainda.',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                )
-              else
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _userMusicList.length,
-                  itemBuilder: (context, index) {
-                    final music = _userMusicList[index];
-                    return _buildMusicItem(context, music, index);
-                  },
-                ),
-              _buildMusicSectionHeader('Músicas Padrão'),
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _defaultMusicList.length,
-                itemBuilder: (context, index) {
-                  final music = _defaultMusicList[index];
-                  // Os índices de músicas padrão são deslocados após as músicas do usuário
-                  return _buildMusicItem(
-                      context, music, _userMusicList.length + index);
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: primaryPurple,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.white.withOpacity(0.7),
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.pets),
-            label: 'DoroTEA',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Perfil',
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildAddMusicCard() {
     return Container(
       margin: const EdgeInsets.all(16.0),
@@ -397,10 +302,93 @@ class _MusicSelectionScreenState extends State<MusicSelectionScreen> {
                   builder: (context) => AddMusicScreen(email: widget.email),
                 ),
               ).then((_) {
-                // AÇÃO PARA RECARREGAR A LISTA APÓS ADICIONAR UMA MÚSICA
-                _loadUserMusic(); 
+                _loadUserMusic();
               });
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Color primaryPurple = Theme.of(context).primaryColor;
+    return Scaffold(
+      backgroundColor: primaryPurple,
+      appBar: AppBar(
+        title: Text(
+          'DoroTEA',
+          style: GoogleFonts.quicksand(
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+            letterSpacing: 1.2,
+          ),
+        ),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+      ),
+      body: RefreshIndicator(
+        onRefresh: _loadUserMusic, // ✅ corrigido
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildAddMusicCard(),
+              _buildMusicSectionHeader('Músicas do Usuário'),
+              if (_userMusicList.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Center(
+                    child: Text(
+                      'Nenhuma música adicionada ainda.',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _userMusicList.length,
+                  itemBuilder: (context, index) {
+                    final music = _userMusicList[index];
+                    return _buildMusicItem(context, music, index);
+                  },
+                ),
+              _buildMusicSectionHeader('Músicas Padrão'),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _defaultMusicList.length,
+                itemBuilder: (context, index) {
+                  final music = _defaultMusicList[index];
+                  return _buildMusicItem(
+                      context, music, _userMusicList.length + index);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: primaryPurple,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white.withOpacity(0.7),
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.pets),
+            label: 'DoroTEA',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Perfil',
           ),
         ],
       ),

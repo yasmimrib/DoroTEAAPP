@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'Telas_X/initial_screen.dart'; // Importe a tela inicial
 import 'Telas_X/home_screen.dart'; // Importe a tela inicial
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Garante que os bindings do Flutter estejam inicializados
 
@@ -109,7 +108,8 @@ class MyApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      home: const InitialScreen(), // Define a tela inicial do aplicativo
+      home: const HomeScreen(email: ''), // Define a tela inicial do aplicativo
     );
+
   }
 }

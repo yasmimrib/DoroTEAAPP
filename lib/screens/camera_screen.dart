@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_vlc_player/flutter_vlc_player.dart';
 import 'package:dorotea_app/Telas_X/profile_screen.dart';
 import 'package:dorotea_app/Telas_X/about_screen.dart';
 import 'package:dorotea_app/Telas_X/home_screen.dart';
@@ -13,8 +14,27 @@ class CameraScreen extends StatefulWidget {
 }
 
 class _CameraScreenState extends State<CameraScreen> {
-  int _selectedIndex = 1; // Ajustado para o índice da câmera
+  int _selectedIndex = 1;
 
+  late VlcPlayerController _vlcController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _vlcController = VlcPlayerController.network(
+      'rtsp://192.168.0.10:554/stream', // URL RTSP da sua câmera
+      autoPlay: true,
+      options: VlcPlayerOptions(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _vlcController.stop();
+    _vlcController.dispose();
+    super.dispose();
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -25,7 +45,8 @@ class _CameraScreenState extends State<CameraScreen> {
       case 0:
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => HomeScreen(email: widget.email)),
+          MaterialPageRoute(
+              builder: (context) => HomeScreen(email: widget.email)),
         );
         break;
       case 1:
@@ -44,11 +65,11 @@ class _CameraScreenState extends State<CameraScreen> {
         break;
     }
   }
+
   @override
   Widget build(BuildContext context) {
-    // Definindo a cor primária para reutilização
     final Color primaryPurple = Theme.of(context).primaryColor;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -58,27 +79,18 @@ class _CameraScreenState extends State<CameraScreen> {
         backgroundColor: primaryPurple,
       ),
       body: Center(
-        child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          color: Colors.grey[100],
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.videocam,
-                size: 80,
-                color: primaryPurple.withOpacity(0.5),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(30),
+          child: SizedBox(
+            width: 350,
+            height: 250,
+            child: VlcPlayer(
+              controller: _vlcController,
+              aspectRatio: 16 / 9,
+              placeholder: const Center(
+                child: CircularProgressIndicator(),
               ),
-              const SizedBox(height: 16),
-              Text(
-                'Feed de Vídeo - Aguardando Conexão',
-                style: GoogleFonts.quicksand(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

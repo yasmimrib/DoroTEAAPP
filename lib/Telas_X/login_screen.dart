@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:dorotea_app/Telas_X/home_screen.dart';
 import 'package:dorotea_app/Telas_X/signup_screen.dart'; 
+import 'package:dorotea_app/constants.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -22,9 +23,8 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_formKey.currentState!.validate()) {
       final email = _emailController.text.trim();
       final senha = _passwordController.text.trim();
-
-      const String apiUrl = 'http://192.168.0.110:5000';
-      final url = Uri.parse('$apiUrl/login');
+      
+      final url = Uri.parse('${AppConfig.apiUrl}/login');
 
       try {
         final response = await http.post(

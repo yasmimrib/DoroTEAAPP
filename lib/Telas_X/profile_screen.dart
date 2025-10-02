@@ -7,6 +7,7 @@ import 'package:dorotea_app/Telas_X/initial_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dorotea_app/Telas_X/about_screen.dart';
 import 'package:dorotea_app/Telas_X/home_screen.dart';
+import 'package:dorotea_app/constants.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userEmail;
@@ -28,8 +29,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadUserProfile() async {
-    const String apiUrl = 'http://192.168.0.110:5000';
-    final url = Uri.parse('$apiUrl/usuario/${widget.userEmail}');
+    final url = Uri.parse('${AppConfig.apiUrl}/usuario/${widget.userEmail}');
+
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
