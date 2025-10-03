@@ -15,15 +15,63 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with TickerProviderStateMixin {
   int _selectedIndex = 0;
   late final List<Map<String, dynamic>> _featureCards;
-  // Aumente a lista para incluir o novo botão
   final List<bool> _isPressed = [false, false, false, false];
+  late AnimationController _staggerController;
+  late List<Animation<Offset>> _slideAnimations;
+  late List<AnimationController> _iconControllers;
+  late List<Animation<double>> _iconAnimations;
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Bom dia!';
+    if (hour < 18) return 'Boa tarde!';
+    return 'Boa noite!';
+  }
 
   @override
   void initState() {
     super.initState();
+    
+    // Animação de entrada dos cards
+    _staggerController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    
+    // Controllers para animação dos ícones
+    _iconControllers = List.generate(4, (index) => 
+      AnimationController(
+        duration: const Duration(milliseconds: 200),
+        vsync: this,
+      )
+    );
+    
+    // Animações de slide para cada card
+    _slideAnimations = List.generate(4, (index) => 
+      Tween<Offset>(
+        begin: const Offset(0, 0.5),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(
+        parent: _staggerController,
+        curve: Interval(
+          index * 0.2,
+          0.8 + (index * 0.05),
+          curve: Curves.easeOutCubic,
+        ),
+      ))
+    );
+    
+    // Animações de rotação para os ícones
+    _iconAnimations = _iconControllers.map((controller) => 
+      Tween<double>(begin: 0, end: 0.1).animate(
+        CurvedAnimation(parent: controller, curve: Curves.elasticOut)
+      )
+    ).toList();
+    
     _featureCards = [
       {
         'icon': Icons.camera_alt,
@@ -81,6 +129,18 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       },
     ];
+    
+    // Inicia animação de entrada
+    _staggerController.forward();
+  }
+  
+  @override
+  void dispose() {
+    _staggerController.dispose();
+    for (var controller in _iconControllers) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 
   void _onItemTapped(int index) {
@@ -117,45 +177,70 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: primaryPurple,
       appBar: AppBar(
-        title: Text(
-          'DoroTEA',
-          style: GoogleFonts.quicksand(
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-            letterSpacing: 1.2,
-          ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _getGreeting(),
+              style: GoogleFonts.roboto(
+                fontSize: 16,
+                color: Colors.white.withOpacity(0.9),
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+            Text(
+              'DoroTEA',
+              style: GoogleFonts.quicksand(
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
+                letterSpacing: 1.2,
+                color: Colors.white,
+              ),
+            ),
+          ],
         ),
         elevation: 0,
         backgroundColor: Colors.transparent,
+        toolbarHeight: 80,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           children: List.generate(_featureCards.length, (index) {
             final cardData = _featureCards[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 20.0),
-              child: GestureDetector(
-                onTapDown: (_) {
-                  setState(() => _isPressed[index] = true);
-                },
-                onTapUp: (_) {
-                  setState(() => _isPressed[index] = false);
-                  cardData['onTap']();
-                },
-                onTapCancel: () {
-                  setState(() => _isPressed[index] = false);
-                },
-                child: AnimatedScale(
-                  scale: _isPressed[index] ? 0.97 : 1.0,
-                  duration: const Duration(milliseconds: 120),
-                  curve: Curves.easeOut,
-                  child: _buildFeatureCard(
-                    icon: cardData['icon'],
-                    title: cardData['title'],
-                    description: cardData['description'],
-                    primaryPurple: primaryPurple,
-                    lightPurpleText: lightPurpleText,
+            return SlideTransition(
+              position: _slideAnimations[index],
+              child: FadeTransition(
+                opacity: _staggerController,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 20.0),
+                  child: GestureDetector(
+                    onTapDown: (_) {
+                      setState(() => _isPressed[index] = true);
+                      _iconControllers[index].forward();
+                    },
+                    onTapUp: (_) {
+                      setState(() => _isPressed[index] = false);
+                      _iconControllers[index].reverse();
+                      cardData['onTap']();
+                    },
+                    onTapCancel: () {
+                      setState(() => _isPressed[index] = false);
+                      _iconControllers[index].reverse();
+                    },
+                    child: AnimatedScale(
+                      scale: _isPressed[index] ? 0.97 : 1.0,
+                      duration: const Duration(milliseconds: 120),
+                      curve: Curves.easeOut,
+                      child: _buildFeatureCard(
+                        icon: cardData['icon'],
+                        title: cardData['title'],
+                        description: cardData['description'],
+                        primaryPurple: primaryPurple,
+                        lightPurpleText: lightPurpleText,
+                        iconAnimation: _iconAnimations[index],
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -193,6 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
     required String description,
     required Color primaryPurple,
     required Color lightPurpleText,
+    required Animation<double> iconAnimation,
   }) {
     return Container(
       padding: const EdgeInsets.all(20.0),
@@ -210,17 +296,25 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12.0),
-            decoration: BoxDecoration(
-              color: primaryPurple.withOpacity(0.18),
-              borderRadius: BorderRadius.circular(15.0),
-            ),
-            child: Icon(
-              icon,
-              size: 40.0,
-              color: primaryPurple,
-            ),
+          AnimatedBuilder(
+            animation: iconAnimation,
+            builder: (context, child) {
+              return Transform.rotate(
+                angle: iconAnimation.value,
+                child: Container(
+                  padding: const EdgeInsets.all(12.0),
+                  decoration: BoxDecoration(
+                    color: primaryPurple.withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(15.0),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 40.0,
+                    color: primaryPurple,
+                  ),
+                ),
+              );
+            },
           ),
           const SizedBox(width: 20.0),
           Expanded(

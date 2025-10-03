@@ -1,13 +1,20 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
+    <!-- PERMISSÕES NECESSÁRIAS PARA O FLUTTER_VLC_PLAYER E REDE -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Adicionando permissão para verificar o estado da rede -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <!-- Adicionando permissão de escrita (útil para cache e logs do VLC) -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
     
+    <!-- CRUCIAL: Permite conexões HTTP ou RTSP não criptografadas (IP local) -->
     <application
         android:label="dorotea_app"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true"> 
         <activity
             android:name=".MainActivity"
             android:exported="true"
