@@ -108,7 +108,7 @@ class MyApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      home: const HomeScreen(email: ''), // Define a tela inicial do aplicativo
+      home: const InitialScreen(), // Define a tela inicial do aplicativo
     );
 
   }

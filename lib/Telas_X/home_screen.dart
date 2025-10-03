@@ -5,7 +5,7 @@ import 'package:dorotea_app/Telas_X/about_screen.dart';
 import 'package:dorotea_app/screens/music_selection_screen.dart';
 import 'package:dorotea_app/screens/report_screen.dart';
 import 'package:dorotea_app/screens/camera_screen.dart'; // Importe a tela da câmera
-import 'package:dorotea_app/screens/guide_music.dart'; // Importe a nova tela
+import 'package:dorotea_app/screens/guide_music_redesign.dart'; // Importe a nova tela
 
 class HomeScreen extends StatefulWidget {
   final String email;

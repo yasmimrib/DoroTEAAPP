@@ -15,7 +15,7 @@ List<HumorEvent> generateSimulatedData() {
 
   for (int i = 0; i < 20; i++) {
     final DateTime eventTime = now.subtract(Duration(days: i, hours: random.nextInt(24)));
-    final int humorValue = random.nextInt(5) + 1; // De 1 a 5
+    final int humorValue = random.nextInt(4) + 1; // De 1 a 4
 
     data.add(HumorEvent(
       dataHora: eventTime,
@@ -33,7 +33,11 @@ List<HumorEvent> generateSimulatedData() {
 }
 
 String _getHumorChange(int humor) {
-  if (humor <= 2) return 'Pouco satisfeito para insatisfeito';
-  if (humor <= 4) return 'Neutro para satisfeito';
-  return 'Satisfeito para muito satisfeito';
+  switch (humor) {
+    case 1: return 'Mudança para triste';
+    case 2: return 'Mudança para neutro';
+    case 3: return 'Mudança para feliz';
+    case 4: return 'Mudança para estressado';
+    default: return 'Mudança neutra';
+  }
 }

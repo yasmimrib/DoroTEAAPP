@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:dorotea_app/models/humor_event.dart';
 import 'package:dorotea_app/humor_data_generator.dart';
-import 'package:dorotea_app/Telas_X/profile_screen.dart'; // Importe a tela de Perfil
-import 'package:dorotea_app/Telas_X/about_screen.dart'; // Importe a tela Sobre
-import 'package:dorotea_app/Telas_X/home_screen.dart'; // Importe a tela Home
+import 'package:dorotea_app/Telas_X/profile_screen.dart';
+import 'package:dorotea_app/Telas_X/about_screen.dart';
+import 'package:dorotea_app/Telas_X/home_screen.dart';
 
 class ReportScreen extends StatefulWidget {
   final String userEmail;
@@ -20,16 +21,16 @@ class _ReportScreenState extends State<ReportScreen> {
   late List<HumorEvent> _humorData;
   late List<HumorEvent> _filteredData;
   String _selectedTimeframe = 'Semana';
-  int _selectedIndex = 0; // Adicione esta variável
+  int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    initializeDateFormatting('pt_BR', null);
     _humorData = generateSimulatedData();
     _filterData(_selectedTimeframe);
   }
 
-  // --- Adicione esta lógica de navegação ---
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -58,7 +59,6 @@ class _ReportScreenState extends State<ReportScreen> {
         break;
     }
   }
-  // --- Fim da lógica de navegação ---
 
   void _filterData(String timeframe) {
     setState(() {
@@ -74,7 +74,6 @@ class _ReportScreenState extends State<ReportScreen> {
         }
       }).toList();
       
-      // Ordena os dados para que o gráfico seja desenhado corretamente
       _filteredData.sort((a, b) => a.dataHora.compareTo(b.dataHora));
     });
   }
@@ -84,16 +83,103 @@ class _ReportScreenState extends State<ReportScreen> {
       case 1:
         return Icons.sentiment_very_dissatisfied;
       case 2:
-        return Icons.sentiment_dissatisfied;
-      case 3:
         return Icons.sentiment_neutral;
-      case 4:
+      case 3:
         return Icons.sentiment_satisfied;
-      case 5:
-        return Icons.sentiment_very_satisfied;
+      case 4:
+        return Icons.mood_bad;
       default:
         return Icons.sentiment_neutral;
     }
+  }
+
+  Widget _buildLegendItem(IconData icon, String label, Color color) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(fontSize: 10)),
+      ],
+    );
+  }
+
+  Widget _buildStatRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Text(value, style: const TextStyle(color: Colors.grey)),
+        ],
+      ),
+    );
+  }
+
+  String _getMostFrequentMood() {
+    if (_filteredData.isEmpty) return 'N/A';
+    final moodCounts = <int, int>{};
+    for (final event in _filteredData) {
+      moodCounts[event.humor] = (moodCounts[event.humor] ?? 0) + 1;
+    }
+    final mostFrequent = moodCounts.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+    return _getHumorLabel(mostFrequent);
+  }
+
+  String _getHumorLabel(int humor) {
+    switch (humor) {
+      case 1: return 'Triste';
+      case 2: return 'Neutro';
+      case 3: return 'Feliz';
+      case 4: return 'Estressado';
+      default: return 'N/A';
+    }
+  }
+
+  Color _getHumorColor(int humor) {
+    switch (humor) {
+      case 1: return Colors.blue;
+      case 2: return Colors.grey;
+      case 3: return Colors.green;
+      case 4: return Colors.orange;
+      default: return Colors.grey;
+    }
+  }
+
+  String _getDateLabel(DateTime date) {
+    if (_selectedTimeframe == 'Semana') {
+      return DateFormat('EEE', 'pt_BR').format(date); // Seg, Ter, Qua...
+    } else {
+      return DateFormat('dd/MM').format(date); // 25/10
+    }
+  }
+
+  String _getMostEffectiveMusic() {
+    if (_filteredData.isEmpty) return 'N/A';
+    
+    // Calcula a eficácia das músicas (humor 3 e 4 são positivos)
+    final musicEffectiveness = <String, List<int>>{};
+    
+    for (final event in _filteredData) {
+      if (!musicEffectiveness.containsKey(event.musica)) {
+        musicEffectiveness[event.musica] = [];
+      }
+      musicEffectiveness[event.musica]!.add(event.humor);
+    }
+    
+    String mostEffective = 'N/A';
+    double bestScore = 0;
+    
+    musicEffectiveness.forEach((music, humors) {
+      // Calcula média dos humores para esta música
+      final average = humors.reduce((a, b) => a + b) / humors.length;
+      if (average > bestScore) {
+        bestScore = average;
+        mostEffective = music;
+      }
+    });
+    
+    return mostEffective;
   }
 
   @override
@@ -115,197 +201,255 @@ class _ReportScreenState extends State<ReportScreen> {
         backgroundColor: Colors.transparent,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
+            // Card com filtros de tempo
+            Container(
+              margin: const EdgeInsets.only(bottom: 16.0),
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15.0),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'Período de Análise',
+                    style: GoogleFonts.quicksand(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: primaryPurple,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: ['Dia', 'Semana', 'Mês'].map((timeframe) {
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                          child: ElevatedButton(
+                            onPressed: () => _filterData(timeframe),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _selectedTimeframe == timeframe
+                                  ? primaryPurple
+                                  : Colors.grey[200],
+                              foregroundColor: _selectedTimeframe == timeframe ? Colors.white : Colors.black,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            child: Text(timeframe, style: const TextStyle(fontSize: 14)),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Card com gráfico simplificado
+            Container(
+              margin: const EdgeInsets.only(bottom: 16.0),
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15.0),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Humor dos Últimos Dias',
+                    style: GoogleFonts.quicksand(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: primaryPurple,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Gráfico de barras horizontal
+                  SizedBox(
+                    height: 200,
+                    child: ListView.builder(
+                      itemCount: _selectedTimeframe == 'Mês' ? _filteredData.length : (_filteredData.length > 7 ? 7 : _filteredData.length),
+                      itemBuilder: (context, index) {
+                        final event = _filteredData.reversed.toList()[index];
+                        final humorPercent = (event.humor / 4.0);
+                        return Container(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              // Data
+                              SizedBox(
+                                width: 60,
+                                child: Text(
+                                  _getDateLabel(event.dataHora),
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                              // Ícone do humor
+                              Icon(
+                                _getHumorIcon(event.humor),
+                                color: primaryPurple,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              // Barra de progresso
+                              Expanded(
+                                child: Container(
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[200],
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: FractionallySizedBox(
+                                    alignment: Alignment.centerLeft,
+                                    widthFactor: humorPercent,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: _getHumorColor(event.humor),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              // Label do humor
+                              SizedBox(
+                                width: 60,
+                                child: Text(
+                                  _getHumorLabel(event.humor),
+                                  style: const TextStyle(fontSize: 11),
+                                  textAlign: TextAlign.end,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Card com resumo estatístico
+            Container(
+              margin: const EdgeInsets.only(bottom: 16.0),
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15.0),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Resumo do Período',
+                    style: GoogleFonts.quicksand(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: primaryPurple,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (_filteredData.isNotEmpty) ...[
+                    _buildStatRow('Total de registros:', '${_filteredData.length}'),
+                    _buildStatRow('Humor mais frequente:', _getMostFrequentMood()),
+                    _buildStatRow('Música mais eficaz:', _getMostEffectiveMusic()),
+                  ] else
+                    const Text('Nenhum dado disponível para o período selecionado.'),
+                ],
+              ),
+            ),
+
+            // Lista de eventos recentes
+            if (_filteredData.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Gráfico de Humor',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    Text(
+                      'Últimos Registros',
+                      style: GoogleFonts.quicksand(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: primaryPurple,
+                      ),
                     ),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: ['Dia', 'Semana', 'Mês'].map((timeframe) {
-                        return Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                            child: ElevatedButton(
-                              onPressed: () => _filterData(timeframe),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: _selectedTimeframe == timeframe
-                                    ? primaryPurple.withAlpha(204)
-                                    : Colors.grey[200],
-                                foregroundColor: _selectedTimeframe == timeframe ? Colors.white : Colors.black,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    const SizedBox(height: 12),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _filteredData.length > 5 ? 5 : _filteredData.length,
+                      itemBuilder: (context, index) {
+                        final event = _filteredData.reversed.toList()[index];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: primaryPurple.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(_getHumorIcon(event.humor), color: primaryPurple, size: 24),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      DateFormat('dd/MM HH:mm').format(event.dataHora),
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                    ),
+                                    Text(event.musica, style: TextStyle(color: Colors.grey[600])),
+                                  ],
+                                ),
                               ),
-                              child: Text(timeframe),
-                            ),
+                            ],
                           ),
                         );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      height: 200,
-                      child: LineChart(
-                        LineChartData(
-                          minX: 0,
-                          maxX: (_filteredData.length - 1).toDouble(),
-                          minY: 1,
-                          maxY: 5,
-                          gridData: FlGridData(
-                            show: true,
-                            drawVerticalLine: true,
-                            horizontalInterval: 1,
-                            verticalInterval: 1,
-                            getDrawingHorizontalLine: (value) {
-                              return const FlLine(color: Color(0xffececec), strokeWidth: 1);
-                            },
-                            getDrawingVerticalLine: (value) {
-                              return const FlLine(color: Color(0xffececec), strokeWidth: 1);
-                            },
-                          ),
-                          titlesData: FlTitlesData(
-                            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                            bottomTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                reservedSize: 30,
-                                getTitlesWidget: (value, meta) {
-                                  final index = value.toInt();
-                                  if (index < 0 || index >= _filteredData.length) {
-                                    return const SizedBox.shrink();
-                                  }
-                                  final event = _filteredData[index];
-                                  String format;
-                                  // Adiciona uma lógica para ajustar o formato da data
-                                  if (_selectedTimeframe == 'Dia') {
-                                    format = 'HH:mm'; // Ex: 14:30
-                                  } else if (_selectedTimeframe == 'Semana') {
-                                    format = 'EE'; // Ex: Seg, Ter, Qua
-                                  } else { // Mês
-                                    format = 'dd/MM'; // Ex: 25/10
-                                  }
-                                  return SideTitleWidget(
-                                    axisSide: meta.axisSide,
-                                    space: 8.0,
-                                    child: Text(
-                                      DateFormat(format, 'pt_BR').format(event.dataHora),
-                                      style: const TextStyle(fontSize: 10),
-                                    ),
-                                  );
-                                },
-                                // Ajusta o intervalo para que os rótulos não se sobreponham
-                                interval: _filteredData.length > 7 ? 2 : 1,
-                              ),
-                            ),
-                            leftTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                interval: 1,
-                                reservedSize: 40,
-                                getTitlesWidget: (value, meta) {
-                                  if (value.toInt() < 1 || value.toInt() > 5) {
-                                    return const SizedBox.shrink();
-                                  }
-                                  return SideTitleWidget(
-                                    axisSide: meta.axisSide,
-                                    space: 8.0,
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(_getHumorIcon(value.toInt()), size: 16, color: Colors.grey[700]),
-                                        const SizedBox(width: 4),
-                                        Text(value.toInt().toString(), style: const TextStyle(fontSize: 12, color: Color.fromARGB(255, 77, 76, 76))),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                          lineBarsData: [
-                            LineChartBarData(
-                              spots: _filteredData.asMap().entries.map((entry) {
-                                return FlSpot(entry.key.toDouble(), entry.value.humor.toDouble());
-                              }).toList(),
-                              isCurved: true,
-                              color: primaryPurple.withAlpha(204),
-                              barWidth: 3,
-                              isStrokeCapRound: true,
-                              dotData: FlDotData(
-                                getDotPainter: (spot, percent, barData, index) {
-                                  return FlDotCirclePainter(
-                                    radius: 4,
-                                    color: primaryPurple,
-                                    strokeColor: Colors.white,
-                                    strokeWidth: 2,
-                                  );
-                                },
-                              ),
-                              belowBarData: BarAreaData(
-                                show: true,
-                                color: primaryPurple.withAlpha(76),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      },
                     ),
                   ],
                 ),
               ),
-            ),
-            
-            const SizedBox(height: 40),
-            
-            const Text(
-              'Relatórios Detalhados',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-            ),
-            const SizedBox(height: 20),
-            
-            _filteredData.isEmpty
-                ? const Center(child: Text('Nenhum dado encontrado para o período.', style: TextStyle(color: Colors.white)))
-                : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _filteredData.length,
-                    itemBuilder: (context, index) {
-                      final event = _filteredData[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        child: ListTile(
-                          title: Text('Data: ${DateFormat('dd/MM/yyyy HH:mm').format(event.dataHora)}'),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Música: ${event.musica}'),
-                              Text('Duração: ${event.duracao}'),
-                              Text('Mudança de Humor: ${event.mudancaHumor}'),
-                              Row(
-                                children: [
-                                  const Text('Humor: '),
-                                  Icon(_getHumorIcon(event.humor), color: primaryPurple),
-                                  Text(' (${event.humor})'),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
           ],
         ),
       ),
